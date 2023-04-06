@@ -959,6 +959,17 @@ struct gclient_s
 
 	edict_t		*chase_target;		// player we are chasing
 	qboolean	update_chase;		// need to update chase info?
+
+	//player specific
+	qboolean		inCombat;	//Stops all things from happening if player is in combat.
+	//inventory (loot)
+	int			gold;
+	int			scales;
+	int			gunpowder;
+
+	//inventory (items)
+	int			bombs;
+	int			potions;
 };
 
 
@@ -1109,5 +1120,17 @@ struct edict_s
 	// common data blocks
 	moveinfo_t		moveinfo;
 	monsterinfo_t	monsterinfo;
+
+	//rpg mod stuff
+	int			MP;
+	//equipment
+	int			armorType;
+	int			weaponType;
+	//loot
+	int			goldValue;
+	int			scaleValue;
+	int			gunpowderValue;
+	//class or monster type
+	int			RPGtype;
 };
 

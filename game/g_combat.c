@@ -385,7 +385,7 @@ void T_Damage (edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir,
 
 	if (!targ->takedamage)
 		return;
-
+	
 	// friendly fire avoidance
 	// if enabled you can't hurt teammates (but you can hurt yourself)
 	// knockback still occurs
@@ -491,8 +491,8 @@ void T_Damage (edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir,
 		else
 			SpawnDamage (te_sparks, point, normal, take);
 
-
-		targ->health = targ->health - take;
+		//this is the line where the damage happens. Take this off to do the damage
+		//targ->health = targ->health - take;
 			
 		if (targ->health <= 0)
 		{
@@ -535,6 +535,15 @@ void T_Damage (edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir,
 		client->damage_blood += take;
 		client->damage_knockback += knockback;
 		VectorCopy (point, client->damage_from);
+	}
+
+	if (targ->client)
+	{
+		client->inCombat = true;
+	}
+	if (attacker->client)
+	{
+		client->inCombat = true;
 	}
 }
 
