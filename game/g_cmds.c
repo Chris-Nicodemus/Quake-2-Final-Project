@@ -948,6 +948,28 @@ void Cmd_Scales_f(edict_t* ent)
 
 	client->scales = client->scales + 50;
 }
+
+void Cmd_Run_f(edict_t* ent)
+{
+	gclient_t* client;
+	if (ent->client)
+	{
+		client = ent->client;
+	}
+	else
+	{
+		return;
+	}
+	if (client->inCombat)
+	{
+		client->inCombat = false;
+		gi.centerprintf(client, "Fled from combat!");
+	}
+	else
+	{
+		gi.centerprintf(client, "You are not in combat!");
+	}
+}
 /*
 =================
 ClientCommand
@@ -1000,6 +1022,11 @@ void ClientCommand (edict_t *ent)
 	if (Q_stricmp(cmd, "scales") == 0)
 	{
 		Cmd_Scales_f(ent);
+		return;
+	}
+	if (Q_stricmp(cmd, "run") == 0)
+	{
+		Cmd_Run_f(ent);
 		return;
 	}
 

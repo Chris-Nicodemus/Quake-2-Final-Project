@@ -536,16 +536,29 @@ void T_Damage (edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir,
 		client->damage_knockback += knockback;
 		VectorCopy (point, client->damage_from);
 	}
-
-	if (targ->client)
+	char *classname = attacker->classname;
+	char monsterChecker[5] = { 0 };
+	memcpy(monsterChecker, classname, 5);
+	gi.bprintf(1, "%s\n", monsterChecker);
+	if (targ->client && Q_stricmp(monsterChecker, "monst") == 0)
 	{
+
+		//gi.bprintf(1, "classname: %s\n", attacker->classname);
 		client->inCombat = true;
 		client->turn = true;
+		monster_think(attacker);
 	}
-	if (attacker->client)
+	else
+	{
+		classname = targ->classname;
+		memcpy(monsterChecker, classname, 5);
+		//gi.bprintf(1, "%s\n", monsterChecker);
+	}
+	if (attacker->client && Q_stricmp(monsterChecker, "monst") == 0)
 	{
 		client = attacker->client;
 		client->inCombat = true;
+		monster_think(targ);
 	}
 }
 
