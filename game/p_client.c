@@ -1630,20 +1630,20 @@ void ClientThink (edict_t *ent, usercmd_t *ucmd)
 		pm.pointcontents = gi.pointcontents;
 
 		// perform a pmove
-		gi.Pmove (&pm);
+		gi.Pmove(&pm);
 
 		// save results of pmove
 		client->ps.pmove = pm.s;
 		client->old_pmove = pm.s;
 
-		for (i=0 ; i<3 ; i++)
+		for (i = 0; i < 3; i++)
 		{
-			ent->s.origin[i] = pm.s.origin[i]*0.125;
-			ent->velocity[i] = pm.s.velocity[i]*0.125;
+			ent->s.origin[i] = pm.s.origin[i] * 0.125;
+			ent->velocity[i] = pm.s.velocity[i] * 0.125;
 		}
 
-		VectorCopy (pm.mins, ent->mins);
-		VectorCopy (pm.maxs, ent->maxs);
+		VectorCopy(pm.mins, ent->mins);
+		VectorCopy(pm.maxs, ent->maxs);
 
 		client->resp.cmd_angles[0] = SHORT2ANGLE(ucmd->angles[0]);
 		client->resp.cmd_angles[1] = SHORT2ANGLE(ucmd->angles[1]);

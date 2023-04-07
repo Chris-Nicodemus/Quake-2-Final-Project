@@ -962,6 +962,7 @@ struct gclient_s
 
 	//player specific
 	qboolean		inCombat;	//Stops all things from happening if player is in combat.
+	qboolean		turn;		//determines which team's turn it is
 	//inventory (loot)
 	int			gold;
 	int			scales;
@@ -1134,3 +1135,24 @@ struct edict_s
 	int			RPGtype;
 };
 
+//RPG mod armor types
+#define ARMOR_NONE		0
+#define ARMOR_LIGHT		1
+#define ARMOR_MEDIUM	2
+#define ARMOR_HEAVY		3
+
+//RPG mod weapon levels
+#define WEAPON_BASIC		0
+#define WEAPON_IRON			1
+#define WEAPON_DARKSTEEL	2
+#define WEAPON_DRAGONSCALE	3
+
+//class and monster types
+#define CLASS_HERO			1
+#define CLASS_ARCHER		2
+#define CLASS_WIZARD		3
+#define CLASS_WARRIOR		4
+#define MONSTER_DRAKE		5
+#define MONSTER_GOBLIN		6
+#define MONSTER_DEMON		7
+#define MONSTER_DRAGON		8

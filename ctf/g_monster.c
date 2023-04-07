@@ -415,9 +415,17 @@ void M_MoveFrame (edict_t *self)
 		move->frame[index].thinkfunc (self);
 }
 
-
+int check = 0;
 void monster_think (edict_t *self)
 {
+	//this is where I wanna make changes
+	/*gclient_t* cl;
+	cl = game.clients;
+	if (check != 1)
+	{
+	gi.cprintf(cl, 5, "I'm thinking");
+	check = 1;
+	}*/
 	M_MoveFrame (self);
 	if (self->linkcount != self->monsterinfo.linkcount)
 	{

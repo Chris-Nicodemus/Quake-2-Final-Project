@@ -540,9 +540,11 @@ void T_Damage (edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir,
 	if (targ->client)
 	{
 		client->inCombat = true;
+		client->turn = true;
 	}
 	if (attacker->client)
 	{
+		client = attacker->client;
 		client->inCombat = true;
 	}
 }

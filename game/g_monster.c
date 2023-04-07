@@ -418,6 +418,14 @@ void M_MoveFrame (edict_t *self)
 
 void monster_think (edict_t *self)
 {
+	gclient_t* cl;
+	cl = game.clients;
+	if (cl->inCombat)
+	{
+		return;
+	}
+	else
+	{
 	M_MoveFrame (self);
 	if (self->linkcount != self->monsterinfo.linkcount)
 	{
@@ -427,6 +435,7 @@ void monster_think (edict_t *self)
 	M_CatagorizePosition (self);
 	M_WorldEffects (self);
 	M_SetEffects (self);
+	}
 }
 
 

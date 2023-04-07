@@ -899,7 +899,55 @@ void Cmd_PlayerList_f(edict_t *ent)
 	gi.cprintf(ent, PRINT_HIGH, "%s", text);
 }
 
+void Cmd_Resources_f(edict_t* ent)
+{
+	gclient_t* client;
+	if (ent->client)
+	{
+		client = ent->client;
+	}
+	else
+	{
+		return;
+	}
+	if (!client->inCombat)
+	{
+		gi.cprintf(ent,50,"\nCurrent Gold:\t%d\nCurrent Scales:\t%d\nCurrent Gunpowder:\t%d", client->gold,client->scales,client->gunpowder);
+	}
+	else
+	{
+		gi.centerprintf(ent,"Cannot shop while in combat.");
+	}
+}
 
+void Cmd_Gold_f(edict_t* ent)
+{
+	gclient_t* client;
+	if (ent->client)
+	{
+		client = ent->client;
+	}
+	else
+	{
+		return;
+	}
+	client->gold = client->gold + 500;
+}
+
+void Cmd_Scales_f(edict_t* ent)
+{
+	gclient_t* client;
+	if (ent->client)
+	{
+		client = ent->client;
+	}
+	else
+	{
+		return;
+	}
+
+	client->scales = client->scales + 50;
+}
 /*
 =================
 ClientCommand
@@ -937,6 +985,21 @@ void ClientCommand (edict_t *ent)
 	if (Q_stricmp (cmd, "help") == 0)
 	{
 		Cmd_Help_f (ent);
+		return;
+	}
+	if (Q_stricmp(cmd, "resources") == 0)
+	{
+		Cmd_Resources_f(ent);
+		return;
+	}
+	if (Q_stricmp(cmd, "gold") == 0)
+	{
+		Cmd_Gold_f(ent);
+		return;
+	}
+	if (Q_stricmp(cmd, "scales") == 0)
+	{
+		Cmd_Scales_f(ent);
 		return;
 	}
 
