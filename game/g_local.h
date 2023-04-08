@@ -971,6 +971,27 @@ struct gclient_s
 	//inventory (items)
 	int			bombs;
 	int			potions;
+	int			magicPotions;
+
+	//party stats
+	int			heroMP;
+	int			heroArmor;
+	int			heroWeapon;
+
+	int			rangerHealth;
+	int			rangerMP;
+	int			rangerArmor;
+	int			rangerWeapon;
+
+	int			wizardHealth;
+	int			wizardMP;
+	int			wizardArmor;
+	int			wizardWeapon;
+
+	int			warriorHealth;
+	int			warriorMP;
+	int			warriorArmor;
+	int			warriorWeapon;
 };
 
 

@@ -374,6 +374,7 @@ qboolean CheckTeamDamage (edict_t *targ, edict_t *attacker)
 	return false;
 }
 
+extern qboolean shopOpen;
 void T_Damage (edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir, vec3_t point, vec3_t normal, int damage, int knockback, int dflags, int mod)
 {
 	gclient_t	*client;
@@ -546,6 +547,7 @@ void T_Damage (edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir,
 		//gi.bprintf(1, "classname: %s\n", attacker->classname);
 		client->inCombat = true;
 		client->turn = true;
+		shopOpen = false;
 		monster_think(attacker);
 	}
 	else
@@ -558,6 +560,7 @@ void T_Damage (edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir,
 	{
 		client = attacker->client;
 		client->inCombat = true;
+		shopOpen = false;
 		monster_think(targ);
 	}
 }

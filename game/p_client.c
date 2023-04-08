@@ -627,6 +627,8 @@ void InitClientPersistant (gclient_t *client)
 	client->pers.max_slugs		= 50;
 
 	client->pers.connected = true;
+
+	//client->heroMP = 100;
 }
 
 
@@ -998,7 +1000,7 @@ void respawn (edict_t *self)
 
 		return;
 	}
-
+	self->MP = 100;
 	// restart the entire server
 	gi.AddCommandString ("menu_loadgame\n");
 }

@@ -183,6 +183,7 @@ void Cmd_Give_f (edict_t *ent)
 
 	if (give_all || Q_stricmp(name, "weapons") == 0)
 	{
+		//gi.cprintf(ent, PRINT_HIGH, "Giving Weapons");
 		for (i=0 ; i<game.num_items ; i++)
 		{
 			it = itemlist + i;
@@ -898,7 +899,78 @@ void Cmd_PlayerList_f(edict_t *ent)
 	}
 	gi.cprintf(ent, PRINT_HIGH, "%s", text);
 }
+qboolean shopOpen = false;
+void Cmd_Shop_f(edict_t* ent)
+{
+	gclient_t* client;
+	if (ent->client)
+	{
+		client = ent->client;
+	}
+	else
+	{
+		return;
+	}
+	if (!client->inCombat)
+	{
+		if (!shopOpen)
+		{
+			shopOpen = true;
+			gi.cprintf(ent, 50, "Shop Opened");
+		}
+		else
+		{
+			shopOpen = false;
+			gi.cprintf(ent, 50, "Shop Closed");
+		}
+	}
+	else
+	{
+		gi.centerprintf(ent, "Cannot shop while in combat.");
+	}
+}
 
+void Cmd_WeaponPrices_f(edict_t* ent)
+{
+	gclient_t* client;
+	if (ent->client)
+	{
+		client = ent->client;
+	}
+	else
+	{
+		return;
+	}
+	gi.cprintf(ent, 1, "Weapon Upgrades\nIron\t10g\nDarksteel\t30g\nDragon Scale\t15 Scales\n");
+}
+
+void Cmd_ArmorPrices_f(edict_t* ent)
+{
+	gclient_t* client;
+	if (ent->client)
+	{
+		client = ent->client;
+	}
+	else
+	{
+		return;
+	}
+	gi.cprintf(ent, 1, "Armor Upgrades\nLight\t10g\nDarksteel\t30g\nDragon Scale\t15 Scales\n");
+}
+
+void Cmd_ConsumablePrices_f(edict_t* ent)
+{
+	gclient_t* client;
+	if (ent->client)
+	{
+		client = ent->client;
+	}
+	else
+	{
+		return;
+	}
+	gi.cprintf(ent, 1, "Consumables \nHealth Potion\t15g\nMagic Potion\t20g\nBomb\t5 Gunpowder\n");
+}
 void Cmd_Resources_f(edict_t* ent)
 {
 	gclient_t* client;
@@ -912,7 +984,7 @@ void Cmd_Resources_f(edict_t* ent)
 	}
 	if (!client->inCombat)
 	{
-		gi.cprintf(ent,50,"\nCurrent Gold:\t%d\nCurrent Scales:\t%d\nCurrent Gunpowder:\t%d", client->gold,client->scales,client->gunpowder);
+		gi.cprintf(ent,1,"Current Gold:\t%d\nCurrent Scales:\t%d\nCurrent Gunpowder:\t%d", client->gold,client->scales,client->gunpowder);
 	}
 	else
 	{
@@ -920,6 +992,662 @@ void Cmd_Resources_f(edict_t* ent)
 	}
 }
 
+void Cmd_Items_f(edict_t* ent)
+{
+	gi.cprintf(ent, 1, "Potions:\t\t%d\nMagic Potions:\t%d\nBombs\t\t%d\n",ent->client->potions, ent->client->magicPotions, ent->client->bombs);
+}
+
+void Cmd_Stats_f(edict_t* ent)
+{
+	//to be finished
+}
+
+void Cmd_Buy_f(edict_t* ent)
+{
+	char* name;;
+	int			index;
+	int			i;
+	qboolean	give_all;
+	edict_t* it_ent;
+	int price;
+	int quantity;
+
+	//gi.cprintf(ent, 1, "%s\n", name);
+
+	if (!shopOpen)
+	{
+		gi.centerprintf(ent, "Shop is closed!");
+		return;
+	}
+
+	/*gi.cprintf(ent, 1, "Number of arguments: %d\n", gi.argc());
+	gi.cprintf(ent, 1, "Args() gives: %s\n", gi.args());
+	for (i = 0; i < gi.argc(); i++)
+	{
+		gi.cprintf(ent, 1, "new arg: %s\n",gi.argv(i));
+		if (i == 2)
+		{
+			gi.cprintf(ent, 1, "Hopefully this is the right digit: %d\n", atoi(gi.argv(i)));
+		}
+	}*/
+	if (Q_stricmp(gi.argv(1), "potion") == 0)
+	{
+		//gi.cprintf(ent, 1, "Got to potion. argc is: %d\n", gi.argc());
+
+		if (gi.argc() == 3)
+		{
+			//gi.cprintf(ent, 1, "%d", atoi(gi.argv(2)));
+			quantity = atoi(gi.argv(2));
+			//gi.cprintf(ent, 1, "quantity: %d\n", quantity);
+			price = 15 * quantity;
+			if (price > ent->client->gold)
+			{
+				gi.centerprintf(ent, "You do not have enough gold!");
+				return;
+			}
+			else
+			{
+				ent->client->gold = ent->client->gold - price;
+				ent->client->potions = ent->client->potions + quantity;
+				gi.centerprintf(ent, "Purchased");
+				return;
+			}
+		}
+		else
+		{
+			price = 15;
+			if (price > ent->client->gold)
+			{
+				gi.centerprintf(ent, "You do not have enough gold!");
+				return;
+			}
+			else
+			{
+				ent->client->gold = ent->client->gold - price;
+				ent->client->potions = ent->client->potions + 1;
+				gi.centerprintf(ent, "Purchased");
+				return;
+			}
+		}
+	}
+
+	if (Q_stricmp(gi.argv(1), "magicpotion") == 0)
+	{
+		//gi.cprintf(ent, 1, "Got to potion. argc is: %d\n", gi.argc());
+
+		if (gi.argc() == 3)
+		{
+			//gi.cprintf(ent, 1, "%d", atoi(gi.argv(2)));
+			quantity = atoi(gi.argv(2));
+			//gi.cprintf(ent, 1, "quantity: %d\n", quantity);
+			price = 20 * quantity;
+			if (price > ent->client->gold)
+			{
+				gi.centerprintf(ent, "You do not have enough gold!");
+				return;
+			}
+			else
+			{
+				ent->client->gold = ent->client->gold - price;
+				ent->client->potions = ent->client->potions + quantity;
+				gi.centerprintf(ent, "Purchased");
+				return;
+			}
+		}
+		else
+		{
+			price = 20;
+			if (price > ent->client->gold)
+			{
+				gi.centerprintf(ent, "You do not have enough gold!");
+				return;
+			}
+			else
+			{
+				ent->client->gold = ent->client->gold - price;
+				ent->client->potions = ent->client->potions + 1;
+				gi.centerprintf(ent, "Purchased");
+				return;
+			}
+		}
+	}
+
+	if (Q_stricmp(gi.argv(1), "bomb") == 0)
+	{
+		//gi.cprintf(ent, 1, "Got to potion. argc is: %d\n", gi.argc());
+
+		if (gi.argc() == 3)
+		{
+			//gi.cprintf(ent, 1, "%d", atoi(gi.argv(2)));
+			quantity = atoi(gi.argv(2));
+			//gi.cprintf(ent, 1, "quantity: %d\n", quantity);
+			price = 5 * quantity;
+			if (price > ent->client->gunpowder)
+			{
+				gi.centerprintf(ent, "You do not have enough gunpowder!");
+				return;
+			}
+			else
+			{
+				ent->client->gunpowder = ent->client->gunpowder - price;
+				ent->client->potions = ent->client->potions + quantity;
+				gi.centerprintf(ent, "Purchased");
+				return;
+			}
+		}
+		else
+		{
+			price = 5;
+			if (price > ent->client->gold)
+			{
+				gi.centerprintf(ent, "You do not have enough gunpowder!");
+				return;
+			}
+			else
+			{
+				ent->client->gunpowder = ent->client->gunpowder - price;
+				ent->client->potions = ent->client->potions + 1;
+				gi.centerprintf(ent, "Purchased");
+				return;
+			}
+		}
+	}
+
+	if (Q_stricmp(gi.argv(1), "hero") == 0)
+	{
+		if (gi.argc() == 3)
+		{
+			if (Q_stricmp(gi.argv(2), "armor") == 0)
+			{
+				switch (ent->client->heroArmor)
+				{
+					//no armor to light
+				case ARMOR_NONE:
+					price = 10;
+					if (price > ent->client->gold)
+					{
+						gi.centerprintf(ent, "You do not have enough gold!");
+						return;
+					}
+					else
+					{
+						ent->client->heroArmor = ARMOR_LIGHT;
+						ent->client->gold = ent->client->gold - price;
+						gi.centerprintf(ent, "Purchased");
+						return;
+					}
+					break;
+					//light armor to medium
+				case ARMOR_LIGHT:
+					price = 30;
+					if (price > ent->client->gold)
+					{
+						gi.centerprintf(ent, "You do not have enough gold!");
+						return;
+					}
+					else
+					{
+						ent->client->heroArmor = ARMOR_MEDIUM;
+						ent->client->gold = ent->client->gold - price;
+						gi.centerprintf(ent, "Purchased");
+						return;
+					}
+					break;
+				case ARMOR_MEDIUM:
+					price = 15;
+					if (price > ent->client->scales)
+					{
+						gi.centerprintf(ent, "You do not have enough dragon scales!");
+						return;
+					}
+					else
+					{
+						ent->client->heroArmor = ARMOR_HEAVY;
+						ent->client->scales = ent->client->scales - price;
+						gi.centerprintf(ent, "Purchased");
+						return;
+					}
+					break;
+				case ARMOR_HEAVY:
+					gi.centerprintf(ent, "You already have the best armor available for this party member!");
+					break;
+				default:
+					gi.centerprintf(ent, "There was a problem");
+				}
+			}
+
+			if (Q_stricmp(gi.argv(2), "weapon") == 0)
+			{
+				switch (ent->client->heroWeapon)
+				{
+					//basic weapon to iron
+				case WEAPON_BASIC:
+					price = 10;
+					if (price > ent->client->gold)
+					{
+						gi.centerprintf(ent, "You do not have enough gold!");
+						return;
+					}
+					else
+					{
+						ent->client->heroWeapon = WEAPON_IRON;
+						ent->client->gold = ent->client->gold - price;
+						gi.centerprintf(ent, "Purchased");
+						return;
+					}
+					break;
+					//iron weapon to darksteel
+				case WEAPON_IRON:
+					price = 30;
+					if (price > ent->client->gold)
+					{
+						gi.centerprintf(ent, "You do not have enough gold!");
+						return;
+					}
+					else
+					{
+						ent->client->heroWeapon = WEAPON_DARKSTEEL;
+						ent->client->gold = ent->client->gold - price;
+						return;
+					}
+					break;
+				case WEAPON_DARKSTEEL:
+					price = 15;
+					if (price > ent->client->scales)
+					{
+						gi.centerprintf(ent, "You do not have enough dragon scales!");
+						return;
+					}
+					else
+					{
+						ent->client->heroWeapon = WEAPON_DRAGONSCALE;
+						ent->client->scales = ent->client->scales - price;
+						gi.centerprintf(ent, "Purchased");
+						return;
+					}
+					break;
+				case WEAPON_DRAGONSCALE:
+					gi.centerprintf(ent, "You already have the best weapon available for this party member!");
+					break;
+				default:
+					gi.centerprintf(ent, "There was a problem");
+				}
+			}
+		}
+	}
+
+	if (Q_stricmp(gi.argv(1), "ranger") == 0)
+	{
+		if (gi.argc() == 3)
+		{
+			if (Q_stricmp(gi.argv(2), "armor") == 0)
+			{
+				switch (ent->client->rangerArmor)
+				{
+					//no armor to light
+				case ARMOR_NONE:
+					price = 10;
+					if (price > ent->client->gold)
+					{
+						gi.centerprintf(ent, "You do not have enough gold!");
+						return;
+					}
+					else
+					{
+						ent->client->rangerArmor = ARMOR_LIGHT;
+						ent->client->gold = ent->client->gold - price;
+						gi.centerprintf(ent, "Purchased");
+						return;
+					}
+					break;
+					//light armor to medium
+				case ARMOR_LIGHT:
+					price = 30;
+					if (price > ent->client->gold)
+					{
+						gi.centerprintf(ent, "You do not have enough gold!");
+						return;
+					}
+					else
+					{
+						ent->client->rangerArmor = ARMOR_MEDIUM;
+						ent->client->gold = ent->client->gold - price;
+						gi.centerprintf(ent, "Purchased");
+						return;
+					}
+					break;
+				case ARMOR_MEDIUM:
+					price = 15;
+					if (price > ent->client->scales)
+					{
+						gi.centerprintf(ent, "You do not have enough dragon scales!");
+						return;
+					}
+					else
+					{
+						ent->client->rangerArmor = ARMOR_HEAVY;
+						ent->client->scales = ent->client->scales - price;
+						gi.centerprintf(ent, "Purchased");
+						return;
+					}
+					break;
+				case ARMOR_HEAVY:
+					gi.centerprintf(ent, "You already have the best armor available for this party member!");
+					break;
+				default:
+					gi.centerprintf(ent, "There was a problem");
+				}
+			}
+
+			if (Q_stricmp(gi.argv(2), "weapon") == 0)
+			{
+				switch (ent->client->rangerWeapon)
+				{
+					//basic weapon to iron
+				case WEAPON_BASIC:
+					price = 10;
+					if (price > ent->client->gold)
+					{
+						gi.centerprintf(ent, "You do not have enough gold!");
+						return;
+					}
+					else
+					{
+						ent->client->rangerWeapon = WEAPON_IRON;
+						ent->client->gold = ent->client->gold - price;
+						gi.centerprintf(ent, "Purchased");
+						return;
+					}
+					break;
+					//iron weapon to darksteel
+				case WEAPON_IRON:
+					price = 30;
+					if (price > ent->client->gold)
+					{
+						gi.centerprintf(ent, "You do not have enough gold!");
+						return;
+					}
+					else
+					{
+						ent->client->rangerWeapon = WEAPON_DARKSTEEL;
+						ent->client->gold = ent->client->gold - price;
+						gi.centerprintf(ent, "Purchased");
+						return;
+					}
+					break;
+				case WEAPON_DARKSTEEL:
+					price = 15;
+					if (price > ent->client->scales)
+					{
+						gi.centerprintf(ent, "You do not have enough dragon scales!");
+						return;
+					}
+					else
+					{
+						ent->client->rangerWeapon = WEAPON_DRAGONSCALE;
+						ent->client->scales = ent->client->scales - price;
+						gi.centerprintf(ent, "Purchased");
+						return;
+					}
+					break;
+				case WEAPON_DRAGONSCALE:
+					gi.centerprintf(ent, "You already have the best weapon available for this party member!");
+					break;
+				default:
+					gi.centerprintf(ent, "There was a problem");
+				}
+			}
+		}
+	}
+
+	if (Q_stricmp(gi.argv(1), "wizard") == 0)
+	{
+		if (gi.argc() == 3)
+		{
+			if (Q_stricmp(gi.argv(2), "armor") == 0)
+			{
+				switch (ent->client->wizardArmor)
+				{
+					//no armor to light
+				case ARMOR_NONE:
+					price = 10;
+					if (price > ent->client->gold)
+					{
+						gi.centerprintf(ent, "You do not have enough gold!");
+						return;
+					}
+					else
+					{
+						ent->client->wizardArmor = ARMOR_LIGHT;
+						ent->client->gold = ent->client->gold - price;
+						gi.centerprintf(ent, "Purchased");
+						return;
+					}
+					break;
+					//light armor to medium
+				case ARMOR_LIGHT:
+					price = 30;
+					if (price > ent->client->gold)
+					{
+						gi.centerprintf(ent, "You do not have enough gold!");
+						return;
+					}
+					else
+					{
+						ent->client->wizardArmor = ARMOR_MEDIUM;
+						ent->client->gold = ent->client->gold - price;
+						gi.centerprintf(ent, "Purchased");
+						return;
+					}
+					break;
+				case ARMOR_MEDIUM:
+					price = 15;
+					if (price > ent->client->scales)
+					{
+						gi.centerprintf(ent, "You do not have enough dragon scales!");
+						return;
+					}
+					else
+					{
+						ent->client->wizardArmor = ARMOR_HEAVY;
+						ent->client->scales = ent->client->scales - price;
+						gi.centerprintf(ent, "Purchased");
+						return;
+					}
+					break;
+				case ARMOR_HEAVY:
+					gi.centerprintf(ent, "You already have the best armor available for this party member!");
+					break;
+				default:
+					gi.centerprintf(ent, "There was a problem");
+				}
+			}
+
+			if (Q_stricmp(gi.argv(2), "weapon") == 0)
+			{
+				switch (ent->client->wizardWeapon)
+				{
+					//basic weapon to iron
+				case WEAPON_BASIC:
+					price = 10;
+					if (price > ent->client->gold)
+					{
+						gi.centerprintf(ent, "You do not have enough gold!");
+						return;
+					}
+					else
+					{
+						ent->client->wizardWeapon = WEAPON_IRON;
+						ent->client->gold = ent->client->gold - price;
+						gi.centerprintf(ent, "Purchased");
+						return;
+					}
+					break;
+					//iron weapon to darksteel
+				case WEAPON_IRON:
+					price = 30;
+					if (price > ent->client->gold)
+					{
+						gi.centerprintf(ent, "You do not have enough gold!");
+						return;
+					}
+					else
+					{
+						ent->client->wizardWeapon = WEAPON_DARKSTEEL;
+						ent->client->gold = ent->client->gold - price;
+						gi.centerprintf(ent, "Purchased");
+						return;
+					}
+					break;
+				case WEAPON_DARKSTEEL:
+					price = 15;
+					if (price > ent->client->scales)
+					{
+						gi.centerprintf(ent, "You do not have enough dragon scales!");
+						return;
+					}
+					else
+					{
+						ent->client->wizardWeapon = WEAPON_DRAGONSCALE;
+						ent->client->scales = ent->client->scales - price;
+						gi.centerprintf(ent, "Purchased");
+						return;
+					}
+					break;
+				case WEAPON_DRAGONSCALE:
+					gi.centerprintf(ent, "You already have the best weapon available for this party member!");
+					break;
+				default:
+					gi.centerprintf(ent, "There was a problem");
+				}
+			}
+		}
+	}
+
+	if (Q_stricmp(gi.argv(1), "warrior") == 0)
+	{
+		if (gi.argc() == 3)
+		{
+			if (Q_stricmp(gi.argv(2), "armor") == 0)
+			{
+				switch (ent->client->warriorArmor)
+				{
+					//no armor to light
+				case ARMOR_NONE:
+					price = 10;
+					if (price > ent->client->gold)
+					{
+						gi.centerprintf(ent, "You do not have enough gold!");
+						return;
+					}
+					else
+					{
+						ent->client->warriorArmor = ARMOR_LIGHT;
+						ent->client->gold = ent->client->gold - price;
+						gi.centerprintf(ent, "Purchased");
+						return;
+					}
+					break;
+					//light armor to medium
+				case ARMOR_LIGHT:
+					price = 30;
+					if (price > ent->client->gold)
+					{
+						gi.centerprintf(ent, "You do not have enough gold!");
+						return;
+					}
+					else
+					{
+						ent->client->warriorArmor = ARMOR_MEDIUM;
+						ent->client->gold = ent->client->gold - price;
+						gi.centerprintf(ent, "Purchased");
+						return;
+					}
+					break;
+				case ARMOR_MEDIUM:
+					price = 15;
+					if (price > ent->client->scales)
+					{
+						gi.centerprintf(ent, "You do not have enough dragon scales!");
+						return;
+					}
+					else
+					{
+						ent->client->warriorArmor = ARMOR_HEAVY;
+						ent->client->scales = ent->client->scales - price;
+						gi.centerprintf(ent, "Purchased");
+						return;
+					}
+					break;
+				case ARMOR_HEAVY:
+					gi.centerprintf(ent, "You already have the best armor available for this party member!");
+					break;
+				default:
+					gi.centerprintf(ent, "There was a problem");
+				}
+			}
+
+			if (Q_stricmp(gi.argv(2), "weapon") == 0)
+			{
+				switch (ent->client->warriorWeapon)
+				{
+					//basic weapon to iron
+				case WEAPON_BASIC:
+					price = 10;
+					if (price > ent->client->gold)
+					{
+						gi.centerprintf(ent, "You do not have enough gold!");
+						return;
+					}
+					else
+					{
+						ent->client->warriorWeapon = WEAPON_IRON;
+						ent->client->gold = ent->client->gold - price;
+						gi.centerprintf(ent, "Purchased");
+						return;
+					}
+					break;
+					//iron weapon to darksteel
+				case WEAPON_IRON:
+					price = 30;
+					if (price > ent->client->gold)
+					{
+						gi.centerprintf(ent, "You do not have enough gold!");
+						return;
+					}
+					else
+					{
+						ent->client->warriorWeapon = WEAPON_DARKSTEEL;
+						ent->client->gold = ent->client->gold - price;
+						gi.centerprintf(ent, "Purchased");
+						return;
+					}
+					break;
+				case WEAPON_DARKSTEEL:
+					price = 15;
+					if (price > ent->client->scales)
+					{
+						gi.centerprintf(ent, "You do not have enough dragon scales!");
+						return;
+					}
+					else
+					{
+						ent->client->warriorWeapon = WEAPON_DRAGONSCALE;
+						ent->client->scales = ent->client->scales - price;
+						gi.centerprintf(ent, "Purchased");
+						return;
+					}
+					break;
+				case WEAPON_DRAGONSCALE:
+					gi.centerprintf(ent, "You already have the best weapon available for this party member!");
+					break;
+				default:
+					gi.centerprintf(ent, "There was a problem");
+				}
+			}
+		}
+	}
+}
 void Cmd_Gold_f(edict_t* ent)
 {
 	gclient_t* client;
@@ -932,6 +1660,7 @@ void Cmd_Gold_f(edict_t* ent)
 		return;
 	}
 	client->gold = client->gold + 500;
+	gi.cprintf(ent, 1, "You now have %d gold\n", ent->client->gold);
 }
 
 void Cmd_Scales_f(edict_t* ent)
@@ -946,7 +1675,14 @@ void Cmd_Scales_f(edict_t* ent)
 		return;
 	}
 
-	client->scales = client->scales + 50;
+	client->scales = client->scales + 100;
+	gi.cprintf(ent, 1, "You now have %d scales\n", ent->client->scales);
+}
+
+void Cmd_Gunpowder_f(edict_t* ent)
+{
+	ent->client->gunpowder = ent->client->gunpowder + 50;
+	gi.cprintf(ent, 1, "You now have %d gunpowder\n", ent->client->gunpowder);
 }
 
 void Cmd_Run_f(edict_t* ent)
@@ -1009,9 +1745,41 @@ void ClientCommand (edict_t *ent)
 		Cmd_Help_f (ent);
 		return;
 	}
+
+	//mod commands
+	if (Q_stricmp(cmd, "shop") == 0)
+	{
+		Cmd_Shop_f(ent);
+		return;
+	}
+	if (Q_stricmp(cmd, "buy") == 0)
+	{
+		Cmd_Buy_f(ent);
+		return;
+	}
+	if (Q_stricmp(cmd, "weapons") == 0)
+	{
+		Cmd_WeaponPrices_f(ent);
+		return;
+	}
+	if (Q_stricmp(cmd, "armor") == 0)
+	{
+		Cmd_ArmorPrices_f(ent);
+		return;
+	}
+	if (Q_stricmp(cmd, "consumable") == 0)
+	{
+		Cmd_ConsumablePrices_f(ent);
+		return;
+	}
 	if (Q_stricmp(cmd, "resources") == 0)
 	{
 		Cmd_Resources_f(ent);
+		return;
+	}
+	if (Q_stricmp(cmd, "items") == 0)
+	{
+		Cmd_Items_f(ent);
 		return;
 	}
 	if (Q_stricmp(cmd, "gold") == 0)
@@ -1022,6 +1790,11 @@ void ClientCommand (edict_t *ent)
 	if (Q_stricmp(cmd, "scales") == 0)
 	{
 		Cmd_Scales_f(ent);
+		return;
+	}
+	if (Q_stricmp(cmd, "gunpowder") == 0)
+	{
+		Cmd_Gunpowder_f(ent);
 		return;
 	}
 	if (Q_stricmp(cmd, "run") == 0)
