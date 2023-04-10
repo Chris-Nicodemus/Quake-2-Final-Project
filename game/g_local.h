@@ -960,9 +960,12 @@ struct gclient_s
 	edict_t		*chase_target;		// player we are chasing
 	qboolean	update_chase;		// need to update chase info?
 
+	//rpg mod stuff
+	int				RPGtype;
 	//player specific
 	qboolean		inCombat;	//Stops all things from happening if player is in combat.
 	qboolean		turn;		//determines which team's turn it is
+	edict_t*		enemy;		//enemy team we are fighting.
 	//inventory (loot)
 	int			gold;
 	int			scales;
@@ -977,21 +980,25 @@ struct gclient_s
 	int			heroMP;
 	int			heroArmor;
 	int			heroWeapon;
+	qboolean	heroDead;
 
 	int			rangerHealth;
 	int			rangerMP;
 	int			rangerArmor;
 	int			rangerWeapon;
+	qboolean	rangerDead;
 
 	int			wizardHealth;
 	int			wizardMP;
 	int			wizardArmor;
 	int			wizardWeapon;
+	qboolean	wizardDead;
 
 	int			warriorHealth;
 	int			warriorMP;
 	int			warriorArmor;
 	int			warriorWeapon;
+	qboolean	warriorDead;
 };
 
 

@@ -1699,6 +1699,8 @@ void Cmd_Run_f(edict_t* ent)
 	if (client->inCombat)
 	{
 		client->inCombat = false;
+		client->enemy = NULL;
+		Cmd_Help_f(ent);
 		gi.centerprintf(client, "Fled from combat!");
 	}
 	else

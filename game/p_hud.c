@@ -431,7 +431,7 @@ void G_SetStats (edict_t *ent)
 	else
 	{*/
 		ent->client->ps.stats[STAT_ARMOR_ICON] = 4;
-		ent->client->ps.stats[STAT_ARMOR] = ent->client->gold;
+		ent->client->ps.stats[STAT_ARMOR] = ent->client->heroMP;
 	//}
 
 	//
