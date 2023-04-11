@@ -422,7 +422,8 @@ void monster_think (edict_t *self)
 	cl = game.clients;
 	if (cl->inCombat)
 	{
-		self->nextthink = level.time + 0.5;
+		//was + 0.5, and is now + 2
+		self->nextthink = level.time + 2;
 	}
 	else
 	{

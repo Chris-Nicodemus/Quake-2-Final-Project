@@ -290,7 +290,114 @@ void Cmd_Score_f (edict_t *ent)
 	ent->client->showscores = true;
 	DeathmatchScoreboard (ent);
 }
+char* GetName(int monsterType)
+{
+	char* name;
+	switch (monsterType)
+	{
+	case MONSTER_NONE:
+		name = "empty";
+		break;
+	case MONSTER_GOBLIN:
+		name = "GOBLIN";
+		break;
+	case MONSTER_ORC:
+		name = "ORC";
+		break;
+	case MONSTER_DRAKE:
+		name = "DRAKE";
+		break;
+	case MONSTER_DEMON:
+		name = "DEMON";
+		break;
+	case MONSTER_DRAGON:
+		name = "DRAGON";
+		break;
+	}
 
+	return name;
+}
+
+extern int numEnemies;
+void CombatScreen(edict_t* ent)
+{
+	gclient_t* client = ent->client;
+
+	edict_t* enemy = client->enemy;
+
+	char	string[1024];
+
+	char* title;
+	title = "Battle!";
+
+	char* enemies;
+	char* e1 = "";
+	char* e2 = "";
+	char* e3 = "";
+	char* space = " ";
+
+	int e1len;
+	int e2len;
+	int e3len;
+	int spacelen = strlen(space);
+	switch (numEnemies)
+	{
+	case 0:
+		enemies = "NOT IN COMBAT";
+		break;
+	case 1:
+		enemies = GetName(enemy->enemy1Type);
+		break;
+	case 2:
+		e1 = GetName(enemy->enemy1Type);
+		e2 = GetName(enemy->enemy2Type);
+
+		e1len = strlen(e1);
+		e2len = strlen(e2);
+
+		enemies = (char*)malloc(e1len + e2len + spacelen);
+		memcpy(enemies, e1, e1len);
+		memcpy(enemies + e1len, space, spacelen);
+		memcpy(enemies + e1len + spacelen, e2, e2len);
+		break;
+	case 3:
+		e1 = GetName(enemy->enemy1Type);
+		e2 = GetName(enemy->enemy2Type);
+		e3 = GetName(enemy->enemy3Type);
+
+		e1len = strlen(e1);
+		e2len = strlen(e2);
+		e3len = strlen(e3);
+
+		enemies = (char*)malloc(e1len + e2len + e3len + spacelen + spacelen);
+		memcpy(enemies, e2, e2len);
+		memcpy(enemies + e2len, space, spacelen);
+		memcpy(enemies + e2len + spacelen, e1, e1len);
+		memcpy(enemies + e2len + spacelen + e1len, space, spacelen);
+		memcpy(enemies + e2len + spacelen + e1len + spacelen, e3, e3len);
+		break;
+	}
+	// send the layout
+	Com_sprintf(string, sizeof(string),
+		"xv 32 yv 8 picn help "			// background
+		"xv 202 yv 12 string2 \"%s\" "		// skill
+		"xv 0 yv 24 cstring2 \"%s\" "		// level name
+		"xv 0 yv 54 cstring2 \"%s\" "		// help 1
+		"xv 0 yv 110 cstring2 \"%s\" "		// help 2
+		"xv 50 yv 164 string2 \" kills     goals    secrets\" "
+		"xv 50 yv 172 string2 \"%3i/%3i     %i/%i       %i/%i\" ",
+		title,
+		enemies,
+		game.helpmessage1,
+		game.helpmessage2,
+		level.killed_monsters, level.total_monsters,
+		level.found_goals, level.total_goals,
+		level.found_secrets, level.total_secrets);
+
+	gi.WriteByte(svc_layout);
+	gi.WriteString(string);
+	gi.unicast(ent, true);
+}
 
 /*
 ==================
@@ -312,7 +419,7 @@ void HelpComputer (edict_t *ent)
 		sk = "hard";
 	else
 		sk = "hard+";
-
+	//changed background from "xv 32 yv 8 picn help " to	"xv 40 yv 16 picn help "
 	// send the layout
 	Com_sprintf (string, sizeof(string),
 		"xv 32 yv 8 picn help "			// background
@@ -363,7 +470,7 @@ void Cmd_Help_f (edict_t *ent)
 
 	ent->client->showhelp = true;
 	ent->client->pers.helpchanged = 0;
-	HelpComputer (ent);
+	CombatScreen (ent);
 }
 
 

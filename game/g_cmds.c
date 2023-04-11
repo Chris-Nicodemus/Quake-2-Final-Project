@@ -1685,6 +1685,68 @@ void Cmd_Gunpowder_f(edict_t* ent)
 	gi.cprintf(ent, 1, "You now have %d gunpowder\n", ent->client->gunpowder);
 }
 
+//Party member attack damage calculation
+void Cmd_PartyAttack_f(edict_t* ent)
+{
+
+}
+
+//Monster attack damage calculation
+void Cmd_MonsterAttack_f(edict_t* ent)
+{
+
+}
+
+//main combat function
+void Cmd_Combat_f(edict_t* ent)
+{
+	gclient_t* client;
+
+	if (ent->client)
+	{
+		client = ent->client;
+	}
+	else
+	{
+		return;
+	}
+
+	edict_t* enemy;
+	enemy = client->enemy;
+
+	if (client->turn)
+	{
+
+	}
+}
+
+//if battle ends or you run from battle, enemy stats and values are cleaned
+void Cmd_CleanValues_f(edict_t* ent)
+{
+	gclient_t* client;
+
+	if (ent->client)
+	{
+		client = ent->client;
+	}
+	else
+	{
+		return;
+	}
+
+	edict_t* enemy;
+	enemy = client->enemy;
+
+	enemy->enemy1Health = 0;
+	enemy->enemy1Type = 0;
+	enemy->enemy2Health = 0;
+	enemy->enemy2Type = 0;
+	enemy->enemy3Health = 0;
+	enemy->enemy3Type = 0;
+
+	client->enemy = NULL;
+}
+
 void Cmd_Run_f(edict_t* ent)
 {
 	gclient_t* client;
@@ -1699,24 +1761,23 @@ void Cmd_Run_f(edict_t* ent)
 	if (client->inCombat)
 	{
 		client->inCombat = false;
+		Cmd_CleanValues_f(ent);
 		client->enemy = NULL;
 
-		if(client->showhelp == true)
-		Cmd_Help_f(ent);
-		
+		if(ent->client->showhelp)
+		{ 
+			Cmd_Help_f(ent);
+		}
+
 		gi.centerprintf(ent, "Fled from combat!");
 	}
 	else
 	{
 		gi.centerprintf(ent, "You are not in combat!");
 	}
-}
-
-//if battle ends or you run from battle, enemy stats and values are cleaned
-void Cmd_CleanValues_f(edict_t* ent)
-{
 
 }
+
 
 //assigns loot and stat values based on enemy type
 void Cmd_LootStatVals_f(edict_t* ent, int enemyType, int numEnemy)
@@ -2052,6 +2113,7 @@ void Cmd_CombatBegin_f(edict_t* ent)
 	}
 }
 
+
 //function for testing random
 void Cmd_Roll_f(edict_t* ent)
 {
@@ -2083,6 +2145,20 @@ void Cmd_Roll_f(edict_t* ent)
 		}
 		gi.cprintf(ent, 1, "random int: %d\n", random);
 	}
+}
+
+void Cmd_Test_f (edict_t* ent)
+{
+	char* string1 = "hel";
+	char* string2 = "lo";
+	char* string4 = "\t";
+	//strcat(string1, string2);
+	char* string3 = "string is: %s%s\n";
+	string3 = (char*) malloc(strlen(string1) + strlen(string2) + strlen(string4));
+	memcpy(string3, string1, strlen(string1));
+	memcpy(string3 + strlen(string1), string4, strlen(string4));
+	memcpy(string3 + strlen(string1) + strlen(string4), string2, strlen(string2));
+	gi.cprintf(ent, 1, "%s",string3);
 }
 /*
 =================
@@ -2183,6 +2259,11 @@ void ClientCommand (edict_t *ent)
 	if (Q_stricmp(cmd, "roll") == 0)
 	{
 		Cmd_Roll_f(ent);
+		return;
+	}
+	if (Q_stricmp(cmd, "test") == 0)
+	{
+		Cmd_Test_f(ent);
 		return;
 	}
 	if (level.intermissiontime)
