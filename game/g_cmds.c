@@ -1700,12 +1700,388 @@ void Cmd_Run_f(edict_t* ent)
 	{
 		client->inCombat = false;
 		client->enemy = NULL;
+
+		if(client->showhelp == true)
 		Cmd_Help_f(ent);
-		gi.centerprintf(client, "Fled from combat!");
+		
+		gi.centerprintf(ent, "Fled from combat!");
 	}
 	else
 	{
-		gi.centerprintf(client, "You are not in combat!");
+		gi.centerprintf(ent, "You are not in combat!");
+	}
+}
+
+//if battle ends or you run from battle, enemy stats and values are cleaned
+void Cmd_CleanValues_f(edict_t* ent)
+{
+
+}
+
+//assigns loot and stat values based on enemy type
+void Cmd_LootStatVals_f(edict_t* ent, int enemyType, int numEnemy)
+{
+	gclient_t* client;
+
+	if (ent->client)
+	{
+		client = ent->client;
+	}
+	else
+	{
+		return;
+	}
+
+	edict_t* enemy;
+	enemy = client->enemy;
+	switch (numEnemy)
+	{
+	//enemy number 1
+	case 1:
+		switch (enemyType)
+		{
+		case MONSTER_GOBLIN:
+			//setting enemy type and health
+			enemy->enemy1Type = MONSTER_GOBLIN;
+			enemy->enemy1Health = 40;
+
+			//loot values
+			enemy->gunpowderValue = enemy->gunpowderValue + 3;
+			enemy->goldValue = enemy->goldValue + 5;
+			break;
+
+		case MONSTER_ORC:
+			//setting enemy type and health
+			enemy->enemy1Type = MONSTER_ORC;
+			enemy->enemy1Health = 60;
+
+			//loot values
+			enemy->goldValue = enemy->goldValue + 15;
+			break;
+
+		case MONSTER_DRAKE:
+			//setting enemy type and health
+			enemy->enemy1Type = MONSTER_DRAKE;
+			enemy->enemy1Health = 100;
+
+			//loot values
+			enemy->scaleValue = enemy->scaleValue + 10;
+			enemy->goldValue = enemy->goldValue + 30;
+			break;
+
+		case MONSTER_DEMON:
+			//setting enemy type and health
+			enemy->enemy1Type = MONSTER_DEMON;
+			enemy->enemy1Health = 160;
+
+			//loot values
+			enemy->gunpowderValue = enemy->gunpowderValue + 10;
+			enemy->goldValue = enemy->goldValue + 60;
+			break;
+
+		case MONSTER_DRAGON:
+			//setting enemy type and health
+			enemy->enemy1Type = MONSTER_DRAKE;
+			enemy->enemy1Health = 180;
+
+			//loot values
+			enemy->scaleValue = enemy->scaleValue + 30;
+			enemy->goldValue = enemy->goldValue + 50;
+			break;
+		}
+		break;
+
+	//enemy number 2
+	case 2:
+		switch (enemyType)
+		{
+		case MONSTER_NONE:
+			enemy->enemy2Type = MONSTER_NONE;
+			break;
+
+		case MONSTER_GOBLIN:
+			//setting enemy type and health
+			enemy->enemy2Type = MONSTER_GOBLIN;
+			enemy->enemy2Health = 40;
+
+			//loot values
+			enemy->gunpowderValue = enemy->gunpowderValue + 3;
+			enemy->goldValue = enemy->goldValue + 5;
+			break;
+
+		case MONSTER_ORC:
+			//setting enemy type and health
+			enemy->enemy2Type = MONSTER_ORC;
+			enemy->enemy2Health = 60;
+
+			//loot values
+			enemy->goldValue = enemy->goldValue + 15;
+			break;
+
+		case MONSTER_DRAKE:
+			//setting enemy type and health
+			enemy->enemy2Type = MONSTER_DRAKE;
+			enemy->enemy2Health = 100;
+
+			//loot values
+			enemy->scaleValue = enemy->scaleValue + 10;
+			enemy->goldValue = enemy->goldValue + 20;
+			break;
+
+		case MONSTER_DEMON:
+			//setting enemy type and health
+			enemy->enemy2Type = MONSTER_DEMON;
+			enemy->enemy2Health = 160;
+
+			//loot values
+			enemy->goldValue = enemy->goldValue + 60;
+			break;
+		}
+		break;
+
+	//enemy number 3
+	case 3:
+		switch (enemyType)
+		{
+		case MONSTER_NONE:
+			enemy->enemy3Type = MONSTER_NONE;
+			break;
+
+		case MONSTER_GOBLIN:
+			//setting enemy type and health
+			enemy->enemy3Type = MONSTER_GOBLIN;
+			enemy->enemy3Health = 40;
+
+			//loot values
+			enemy->gunpowderValue = enemy->gunpowderValue + 3;
+			enemy->goldValue = enemy->goldValue + 5;
+			break;
+
+		case MONSTER_ORC:
+			//setting enemy type and health
+			enemy->enemy3Type = MONSTER_ORC;
+			enemy->enemy3Health = 60;
+
+			//loot values
+			enemy->goldValue = enemy->goldValue + 15;
+			break;
+		}
+	}
+	gi.cprintf(ent, 1, "Monster type is: %d\n", enemyType);
+}
+
+qboolean firstCombat = true;
+int numEnemies = 0;
+void Cmd_CombatBegin_f(edict_t* ent)
+{
+	int i;
+	int enemyType;
+	gclient_t* client;
+
+	if (ent->client)
+	{
+		client = ent->client;
+	}
+	else
+	{
+		return;
+	}
+	//sets starting stats
+	if (firstCombat)
+	{
+		client->heroMP = 100;
+
+		client->rangerHealth = 100;
+		client->rangerMP = 100;
+
+		client->wizardHealth = 100;
+		client->wizardMP = 100;
+
+		client->warriorHealth = 100;
+		client->warriorMP = 100;
+
+		firstCombat = false;
+	}
+
+	//determines number of enemies for combat
+	numEnemies = (int)(crandom() * 3);
+	if (numEnemies < 0)
+	{
+		numEnemies = numEnemies * -1;
+	}
+	numEnemies += 1;
+
+	while (numEnemies == 0)
+	{
+		numEnemies = (int)(crandom() * 3);
+		if (numEnemies < 0)
+		{
+			numEnemies = numEnemies * -1;
+		}
+		numEnemies += 1;
+	}
+
+	gi.cprintf(ent, 1, "Number of enemies: %d\n", numEnemies);
+	//determines enemy types and loot values
+	switch (numEnemies)
+	{
+		//spawns stronger enemies if lower number of enemies
+	case 1:
+		//range
+		enemyType = (int)(crandom() * 3);
+
+		//invert negatives
+		if (enemyType < 0)
+		{
+			enemyType = enemyType * -1;
+		}
+
+		//increase min values
+		enemyType += 3;
+
+		//repeat unitl non zero answer
+		while (enemyType == 0)
+		{
+			enemyType = (int)(crandom() * 3);
+			if (enemyType < 0)
+			{
+				enemyType = enemyType * -1;
+			}
+			enemyType += 3;
+		}
+		Cmd_LootStatVals_f(ent, enemyType, 1);
+		Cmd_LootStatVals_f(ent, MONSTER_NONE, 2);
+		Cmd_LootStatVals_f(ent, MONSTER_NONE, 3);
+		break;
+
+		//can spawn some minibosses, but they are rarer than goblins or orcs
+	case 2:
+		for (i = 1; i < 3; i++)
+		{
+			//range
+			enemyType = (int)(crandom() * 6);
+
+			//invert negatives
+			if (enemyType < 0)
+			{
+				enemyType = enemyType * -1;
+			}
+
+			//increase min values
+			enemyType += 1;
+
+			//skewing the values to make goblins and orcs spawn more often
+			if (enemyType == 2)
+			{
+				enemyType = 1;
+			}
+			if (enemyType == 3 || enemyType == 4)
+			{
+				enemyType = 2;
+			}
+			if (enemyType == 5)
+			{
+				enemyType = 3;
+			}
+			if (enemyType == 6)
+			{
+				enemyType = 4;
+			}
+			//repeat unitl non zero answer
+			while (enemyType == 0)
+			{
+				enemyType = (int)(crandom() * 6);
+				if (enemyType < 0)
+				{
+					enemyType = enemyType * -1;
+				}
+				enemyType += 1;
+
+				//skewing the values to make goblins and orcs spawn more often
+				if (enemyType == 2)
+				{
+					enemyType = 1;
+				}
+				if (enemyType == 3 || enemyType == 4)
+				{
+					enemyType = 2;
+				}
+				if (enemyType == 5)
+				{
+					enemyType = 3;
+				}
+				if (enemyType == 6)
+				{
+					enemyType = 4;
+				}
+			}
+			Cmd_LootStatVals_f(ent, enemyType, i);
+		}
+		Cmd_LootStatVals_f(ent, MONSTER_NONE, 3);
+		break;
+
+		//only goblins or orcs can spawn when there are three enemies
+	case 3:
+		for (i = 1; i < 4; i++)
+		{
+			//range
+			enemyType = (int)(crandom() * 2);
+
+			//invert negatives
+			if (enemyType < 0)
+			{
+				enemyType = enemyType * -1;
+			}
+
+			//increase min values
+			enemyType += 1;
+
+			//repeat unitl non zero answer
+			while (enemyType == 0)
+			{
+				enemyType = (int)(crandom() * 2);
+				if (enemyType < 0)
+				{
+					enemyType = enemyType * -1;
+				}
+				enemyType += 1;
+			}
+			Cmd_LootStatVals_f(ent, enemyType, i);
+		}
+		break;
+	}
+}
+
+//function for testing random
+void Cmd_Roll_f(edict_t* ent)
+{
+	int i;
+	int random;
+	for (i = 0; i < 5; i++)
+	{
+		//range
+		random = (int)(crandom() * 2);
+
+		//invert negatives
+		if (random < 0)
+		{
+			random = random * -1;
+		}
+
+		//increase min values
+		random += 1;
+
+		//repeat unitl non zero answer
+		while (random == 0)
+		{
+			random = (int)(crandom() * 2);
+			if (random < 0)
+			{
+				random = random * -1;
+			}
+			random += 1;
+		}
+		gi.cprintf(ent, 1, "random int: %d\n", random);
 	}
 }
 /*
@@ -1804,7 +2180,11 @@ void ClientCommand (edict_t *ent)
 		Cmd_Run_f(ent);
 		return;
 	}
-
+	if (Q_stricmp(cmd, "roll") == 0)
+	{
+		Cmd_Roll_f(ent);
+		return;
+	}
 	if (level.intermissiontime)
 		return;
 

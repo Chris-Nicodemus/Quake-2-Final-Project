@@ -1161,6 +1161,16 @@ struct edict_s
 	int			gunpowderValue;
 	//class or monster type
 	int			RPGtype;
+
+	//hardcode the armor for each monster type
+	int			enemy1Type;
+	int			enemy1Health;
+
+	int			enemy2Type;
+	int			enemy2Health;
+
+	int			enemy3Type;
+	int			enemy3Health;
 };
 
 //RPG mod armor types
@@ -1177,10 +1187,13 @@ struct edict_s
 
 //class and monster types
 #define CLASS_HERO			1
-#define CLASS_ARCHER		2
+#define CLASS_RANGER		2
 #define CLASS_WIZARD		3
 #define CLASS_WARRIOR		4
-#define MONSTER_DRAKE		5
-#define MONSTER_GOBLIN		6
-#define MONSTER_DEMON		7
-#define MONSTER_DRAGON		8
+
+#define MONSTER_NONE		0
+#define MONSTER_GOBLIN		1
+#define MONSTER_ORC			2
+#define MONSTER_DRAKE		3
+#define MONSTER_DEMON		4
+#define MONSTER_DRAGON		5

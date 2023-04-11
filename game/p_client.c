@@ -1569,6 +1569,8 @@ This will be called once for each client frame, which will
 usually be a couple times for each server frame.
 ==============
 */
+extern firstCombat;
+
 void ClientThink (edict_t *ent, usercmd_t *ucmd)
 {
 	gclient_t	*client;
@@ -1742,6 +1744,11 @@ void ClientThink (edict_t *ent, usercmd_t *ucmd)
 		other = g_edicts + i;
 		if (other->inuse && other->client->chase_target == ent)
 			UpdateChaseCam(other);
+	}
+
+	if (!firstCombat && ent->health <= 0)
+	{
+		firstCombat = true;
 	}
 }
 

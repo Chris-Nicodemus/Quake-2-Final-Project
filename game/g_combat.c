@@ -542,19 +542,22 @@ void T_Damage (edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir,
 	memcpy(monsterChecker, classname, 5);
 	//vec3_t angles;
 	//trace_t		tr;
-	//gi.bprintf(1, "classname: %s\n", monsterChecker);
 	//vec3_t		look;
 	if (targ->client && Q_stricmp(monsterChecker, "monst") == 0)
 	{
-
-		//gi.bprintf(1, "classname: %s\n", attacker->classname);
-		//tr = gi.trace(targ->s.origin, NULL, NULL, attacker->s.origin, targ, MASK_SHOT);
-		client->inCombat = true;
-		client->turn = true;
-		client->enemy = attacker;
-		shopOpen = false;
-		monster_think(attacker);
-		Cmd_Help_f(targ);
+		if(!targ->client->inCombat)
+		{
+			gi.cprintf(targ, 1, "classname: %s\n", monsterChecker);
+			//gi.bprintf(1, "classname: %s\n", attacker->classname);
+			//tr = gi.trace(targ->s.origin, NULL, NULL, attacker->s.origin, targ, MASK_SHOT);
+			client->inCombat = true;
+			client->turn = true;
+			client->enemy = attacker;
+			shopOpen = false;
+			monster_think(attacker);
+			Cmd_CombatBegin_f(targ);
+			Cmd_Help_f(targ);
+		}
 	}
 	else
 	{
@@ -564,12 +567,16 @@ void T_Damage (edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir,
 	}
 	if (attacker->client && Q_stricmp(monsterChecker, "monst") == 0)
 	{
-		client = attacker->client;
-		client->inCombat = true;
-		client->enemy = targ;
-		shopOpen = false;
-		monster_think(targ);
-		Cmd_Help_f(attacker);
+		if (!attacker->client->inCombat)
+		{
+			client = attacker->client;
+			client->inCombat = true;
+			client->enemy = targ;
+			shopOpen = false;
+			monster_think(targ);
+			Cmd_CombatBegin_f(attacker);
+			Cmd_Help_f(attacker);
+		}
 	}
 }
 
