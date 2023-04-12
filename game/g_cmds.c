@@ -1842,7 +1842,7 @@ void Cmd_LootStatVals_f(edict_t* ent, int enemyType, int numEnemy)
 
 		case MONSTER_DRAGON:
 			//setting enemy type and health
-			enemy->enemy1Type = MONSTER_DRAKE;
+			enemy->enemy1Type = MONSTER_DRAGON;
 			enemy->enemy1Health = 180;
 
 			//loot values
@@ -2147,18 +2147,11 @@ void Cmd_Roll_f(edict_t* ent)
 	}
 }
 
+qboolean test;
 void Cmd_Test_f (edict_t* ent)
 {
-	char* string1 = "hel";
-	char* string2 = "lo";
-	char* string4 = "\t";
-	//strcat(string1, string2);
-	char* string3 = "string is: %s%s\n";
-	string3 = (char*) malloc(strlen(string1) + strlen(string2) + strlen(string4));
-	memcpy(string3, string1, strlen(string1));
-	memcpy(string3 + strlen(string1), string4, strlen(string4));
-	memcpy(string3 + strlen(string1) + strlen(string4), string2, strlen(string2));
-	gi.cprintf(ent, 1, "%s",string3);
+	test = true;
+	CombatScreen(ent);
 }
 /*
 =================

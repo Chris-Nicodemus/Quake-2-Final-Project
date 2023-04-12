@@ -290,7 +290,7 @@ void Cmd_Score_f (edict_t *ent)
 	ent->client->showscores = true;
 	DeathmatchScoreboard (ent);
 }
-char* GetName(int monsterType)
+char* GetMonsterName(int monsterType)
 {
 	char* name;
 	switch (monsterType)
@@ -318,7 +318,26 @@ char* GetName(int monsterType)
 	return name;
 }
 
+char* GetPartyName(int classType)
+{
+	char* name;
+	switch (classType)
+	{
+	case CLASS_RANGER:
+		name = "RANGER";
+		break;
+	case CLASS_WIZARD:
+		name = "WIZARD";
+		break;
+	case CLASS_WARRIOR:
+		name = "WARRIOR";
+		break;
+	}
+
+	return name;
+}
 extern int numEnemies;
+extern qboolean test;
 void CombatScreen(edict_t* ent)
 {
 	gclient_t* client = ent->client;
@@ -327,9 +346,11 @@ void CombatScreen(edict_t* ent)
 
 	char	string[1024];
 
+	//title string
 	char* title;
 	title = "Battle!";
 
+	//enemy list strings and ints
 	char* enemies;
 	char* e1 = "";
 	char* e2 = "";
@@ -340,17 +361,25 @@ void CombatScreen(edict_t* ent)
 	int e2len;
 	int e3len;
 	int spacelen = strlen(space);
+
+	char* testString = "Test didn't work";
+	if (test)
+	{
+		testString = "Test did work!";
+	}
+
+	//enemy list
 	switch (numEnemies)
 	{
 	case 0:
 		enemies = "NOT IN COMBAT";
 		break;
 	case 1:
-		enemies = GetName(enemy->enemy1Type);
+		enemies = GetMonsterName(enemy->enemy1Type);
 		break;
 	case 2:
-		e1 = GetName(enemy->enemy1Type);
-		e2 = GetName(enemy->enemy2Type);
+		e1 = GetMonsterName(enemy->enemy1Type);
+		e2 = GetMonsterName(enemy->enemy2Type);
 
 		e1len = strlen(e1);
 		e2len = strlen(e2);
@@ -361,9 +390,9 @@ void CombatScreen(edict_t* ent)
 		memcpy(enemies + e1len + spacelen, e2, e2len);
 		break;
 	case 3:
-		e1 = GetName(enemy->enemy1Type);
-		e2 = GetName(enemy->enemy2Type);
-		e3 = GetName(enemy->enemy3Type);
+		e1 = GetMonsterName(enemy->enemy1Type);
+		e2 = GetMonsterName(enemy->enemy2Type);
+		e3 = GetMonsterName(enemy->enemy3Type);
 
 		e1len = strlen(e1);
 		e2len = strlen(e2);
@@ -384,15 +413,15 @@ void CombatScreen(edict_t* ent)
 		"xv 0 yv 24 cstring2 \"%s\" "		// level name
 		"xv 0 yv 54 cstring2 \"%s\" "		// help 1
 		"xv 0 yv 110 cstring2 \"%s\" "		// help 2
-		"xv 50 yv 164 string2 \" kills     goals    secrets\" "
-		"xv 50 yv 172 string2 \"%3i/%3i     %i/%i       %i/%i\" ",
+		"xv 50 yv 164 string2 \"RANGER    WIZARD    WARRIOR\" "
+		"xv 50 yv 172 string2 \"%3i/%3i   %i/%i   %i/%i\" ",
 		title,
 		enemies,
-		game.helpmessage1,
+		testString,
 		game.helpmessage2,
-		level.killed_monsters, level.total_monsters,
-		level.found_goals, level.total_goals,
-		level.found_secrets, level.total_secrets);
+		client->rangerHealth, client->rangerMP,
+		client->wizardHealth, client->wizardMP,
+		client->warriorHealth, client->warriorMP);
 
 	gi.WriteByte(svc_layout);
 	gi.WriteString(string);
