@@ -899,6 +899,9 @@ void Cmd_PlayerList_f(edict_t *ent)
 	}
 	gi.cprintf(ent, PRINT_HIGH, "%s", text);
 }
+
+int partyIndex = 1;
+int monsterIndex = 1;
 qboolean shopOpen = false;
 void Cmd_Shop_f(edict_t* ent)
 {
@@ -1004,9 +1007,59 @@ void Cmd_Stats_f(edict_t* ent)
 
 void Cmd_Skills_f(edict_t* ent)
 {
+	char* hero = "Hero Skills:\nHope --- Revives Fallen Allies \tCost:40\nHoly Shield --- Temp Health for Allies \tCost:30\nSmite --- Powerful Attack, Ignores Shrouds \tCost:15\n";
+	char* ranger = "Ranger Skills:\nRain of Arrows --- Strikes All \tCost:25\nHeartpiercer --- Powerful Attack, Extremely Effective Against Armor \tCost:30\n";
+	char* wizard = "Wizard Skills:\nFire Ball --- Strikes All, Powerful Against Weaker Enemies \tCost:35\nCurse of Frailty --- Reduces Damage of an Enemy\'s Attack \tCost:20\nLightning --- Severely Damage An Enemy \tCost:40\n";
+	char* warrior = "Warrior Skills:\nTaunt --- All Enemies Attack You Next Turn \tCost:35\nShield Bash --- Stronger Attack, Increased Defense for two Turns \tCost:25";
+
+	//shows skills of current turn
+	if (gi.argc() == 1 && ent->client->turn)
+	{
+		switch (partyIndex)
+		{
+		case CLASS_HERO:
+			gi.cprintf(ent, 1, "%s", hero);
+			return;
+			break;
+		case CLASS_RANGER:
+			gi.cprintf(ent, 1, "%s", ranger);
+			return;
+			break;
+		case CLASS_WIZARD:
+			gi.cprintf(ent, 1, "%s", wizard);
+			return;
+			break;
+		case CLASS_WARRIOR:
+			gi.cprintf(ent, 1, "%s", warrior);
+			return;
+			break;
+		}
+	}
+	else if (gi.argc() == 1 && !ent->client->turn)
+	{
+		gi.cprintf(ent, 1, "Please Specify Class\n");
+		return;
+	}
+
 	if (Q_stricmp(gi.argv(1), "hero") == 0)
 	{
-		gi.cprintf(ent, 1, "Hero Skills:\nHope --- Revives Fallen Allies \tCost:40\nHoly Shield --- Temp Health for Allies \tCost:30\nSmite --- Powerful Attack, Ignores Shrouds \tCost:15");
+		gi.cprintf(ent, 1, "%s",hero);
+		return;
+	}
+	if (Q_stricmp(gi.argv(1), "ranger") == 0)
+	{	
+		gi.cprintf(ent, 1, "%s", ranger);
+		return;
+	}
+	if (Q_stricmp(gi.argv(1), "wizard") == 0)
+	{
+		gi.cprintf(ent, 1, "%s", wizard);
+		return;
+	}
+	if (Q_stricmp(gi.argv(1), "warrior") == 0)
+	{
+		gi.cprintf(ent, 1, "%s", warrior);
+		return;
 	}
 }
 void Cmd_Buy_f(edict_t* ent)
@@ -1727,8 +1780,6 @@ void Cmd_CombatWon_f(edict_t* ent)
 }
 
 //if battle ends or you run from battle, enemy stats and values are cleaned
-int partyIndex = 1;
-int monsterIndex = 1;
 void Cmd_CleanValues_f(edict_t* ent)
 {
 	gclient_t* client;
