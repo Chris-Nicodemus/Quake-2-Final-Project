@@ -299,18 +299,23 @@ char* GetMonsterName(int monsterType)
 		name = "empty";
 		break;
 	case MONSTER_GOBLIN:
+		name = (char*)malloc(6);
 		name = "GOBLIN";
 		break;
 	case MONSTER_ORC:
+		name = (char*)malloc(3);
 		name = "ORC";
 		break;
 	case MONSTER_DRAKE:
+		name = (char*)malloc(5);
 		name = "DRAKE";
 		break;
 	case MONSTER_DEMON:
+		name = (char*)malloc(5);
 		name = "DEMON";
 		break;
 	case MONSTER_DRAGON:
+		name = (char*)malloc(6);
 		name = "DRAGON";
 		break;
 	}
@@ -338,6 +343,7 @@ char* GetPartyName(int classType)
 }
 extern int numEnemies;
 extern qboolean test;
+extern qboolean firstCombat;
 void CombatScreen(edict_t* ent)
 {
 	gclient_t* client = ent->client;
@@ -362,20 +368,21 @@ void CombatScreen(edict_t* ent)
 	int e3len;
 	int spacelen = strlen(space);
 
-	char* testString = "Test didn't work";
-	if (test)
-	{
-		testString = "Test did work!";
-	}
+	char* guide;
 
-	//enemy list
+	//enemy list and guide info
 	switch (numEnemies)
 	{
 	case 0:
 		enemies = "NOT IN COMBAT";
+		guide = "Use some items or the hero's hope skill to heal!";
 		break;
 	case 1:
 		enemies = GetMonsterName(enemy->enemy1Type);
+		if (client->turn)
+		{
+			guide = "Attack, use a skill, use an item, or run!";
+		}
 		break;
 	case 2:
 		e1 = GetMonsterName(enemy->enemy1Type);
@@ -388,6 +395,11 @@ void CombatScreen(edict_t* ent)
 		memcpy(enemies, e1, e1len);
 		memcpy(enemies + e1len, space, spacelen);
 		memcpy(enemies + e1len + spacelen, e2, e2len);
+
+		if (client->turn)
+		{
+			guide = "Attack left or right, use a skill, use an item, or run!";
+		}
 		break;
 	case 3:
 		e1 = GetMonsterName(enemy->enemy1Type);
@@ -404,9 +416,58 @@ void CombatScreen(edict_t* ent)
 		memcpy(enemies + e2len + spacelen, e1, e1len);
 		memcpy(enemies + e2len + spacelen + e1len, space, spacelen);
 		memcpy(enemies + e2len + spacelen + e1len + spacelen, e3, e3len);
+		if (client->turn)
+		{
+			guide = "Attack left, right, or center, use a skill, use an item, or run!";
+		}
 		break;
 	}
-	// send the layout
+
+	//Enemy turn guide
+	if (client->inCombat && !client->turn)
+	{
+		guide = "It is not your turn yet! Press \'G\' to continue";
+	}
+
+
+	//sets starting stats
+	if (firstCombat)
+	{
+		client->heroMP = 100;
+
+		client->rangerHealth = 100;
+		client->rangerMP = 100;
+
+		client->wizardHealth = 100;
+		client->wizardMP = 100;
+
+		client->warriorHealth = 100;
+		client->warriorMP = 100;
+
+		firstCombat = false;
+	}
+
+	if (client->rangerHealth == 100 && client->wizardHealth == 100 && client->warriorHealth == 100 && client->rangerMP == 100 && client->wizardMP == 100 && client->warriorMP == 100)
+	{
+		Com_sprintf(string, sizeof(string),
+			"xv 32 yv 8 picn help "			// background
+			"xv 202 yv 12 string2 \"%s\" "		// skill
+			"xv 0 yv 24 cstring2 \"%s\" "		// level name
+			"xv 0 yv 54 cstring2 \"%s\" "		// help 1
+			"xv 0 yv 110 cstring2 \"%s\" "		// help 2
+			"xv 50 yv 164 string2 \"RANGER    WIZARD    WARRIOR\" "
+			"xv 0 yv 172 cstring2 \"  %i/%i   %i/%i   %i/%i  \" ",
+			title,
+			enemies,
+			guide,
+			game.helpmessage2,
+			client->rangerHealth, client->rangerMP,
+			client->wizardHealth, client->wizardMP,
+			client->warriorHealth, client->warriorMP);
+	}
+	else
+	{
+	// send the layout for double digits because this happens most of the time
 	Com_sprintf(string, sizeof(string),
 		"xv 32 yv 8 picn help "			// background
 		"xv 202 yv 12 string2 \"%s\" "		// skill
@@ -414,15 +475,15 @@ void CombatScreen(edict_t* ent)
 		"xv 0 yv 54 cstring2 \"%s\" "		// help 1
 		"xv 0 yv 110 cstring2 \"%s\" "		// help 2
 		"xv 50 yv 164 string2 \"RANGER    WIZARD    WARRIOR\" "
-		"xv 50 yv 172 string2 \"%3i/%3i   %i/%i   %i/%i\" ",
+		"xv 0 yv 172 cstring2 \" %i/%i      %i/%i     %i/%i  \" ",
 		title,
 		enemies,
-		testString,
+		guide,
 		game.helpmessage2,
 		client->rangerHealth, client->rangerMP,
 		client->wizardHealth, client->wizardMP,
 		client->warriorHealth, client->warriorMP);
-
+	}
 	gi.WriteByte(svc_layout);
 	gi.WriteString(string);
 	gi.unicast(ent, true);

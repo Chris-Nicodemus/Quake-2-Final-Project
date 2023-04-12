@@ -1948,7 +1948,7 @@ void Cmd_CombatBegin_f(edict_t* ent)
 		return;
 	}
 	//sets starting stats
-	if (firstCombat)
+	/*if (firstCombat)
 	{
 		client->heroMP = 100;
 
@@ -1962,7 +1962,7 @@ void Cmd_CombatBegin_f(edict_t* ent)
 		client->warriorMP = 100;
 
 		firstCombat = false;
-	}
+	}*/
 
 	//determines number of enemies for combat
 	numEnemies = (int)(crandom() * 3);
@@ -1989,7 +1989,7 @@ void Cmd_CombatBegin_f(edict_t* ent)
 		//spawns stronger enemies if lower number of enemies
 	case 1:
 		//range
-		enemyType = (int)(crandom() * 3);
+		enemyType = (int)(crandom() * 5);
 
 		//invert negatives
 		if (enemyType < 0)
@@ -2000,6 +2000,20 @@ void Cmd_CombatBegin_f(edict_t* ent)
 		//increase min values
 		enemyType += 3;
 
+		//skewing the values to make drakes and shadows spawn more often
+		if (enemyType == 4)
+		{
+			enemyType = 3;
+		}
+		if (enemyType == 5 || enemyType == 6)
+		{
+			enemyType = 4;
+		}
+		if (enemyType == 7)
+		{
+			enemyType = 5;
+		}
+	
 		//repeat unitl non zero answer
 		while (enemyType == 0)
 		{
@@ -2009,6 +2023,19 @@ void Cmd_CombatBegin_f(edict_t* ent)
 				enemyType = enemyType * -1;
 			}
 			enemyType += 3;
+			//skewing the values to make drakes and shadows spawn more often
+			if (enemyType == 4)
+			{
+				enemyType = 3;
+			}
+			if (enemyType == 5 || enemyType == 6)
+			{
+				enemyType = 4;
+			}
+			if (enemyType == 7)
+			{
+				enemyType = 5;
+			}
 		}
 		Cmd_LootStatVals_f(ent, enemyType, 1);
 		Cmd_LootStatVals_f(ent, MONSTER_NONE, 2);
@@ -2122,7 +2149,7 @@ void Cmd_Roll_f(edict_t* ent)
 	for (i = 0; i < 5; i++)
 	{
 		//range
-		random = (int)(crandom() * 2);
+		random = (int)(crandom() * 5);
 
 		//invert negatives
 		if (random < 0)
@@ -2130,18 +2157,42 @@ void Cmd_Roll_f(edict_t* ent)
 			random = random * -1;
 		}
 
-		//increase min values
-		random += 1;
 
+		//increase min values
+		random += 3;
+		if (random == 4)
+		{
+			random = 3;
+		}
+		if (random == 5 || random == 6)
+		{
+			random = 4;
+		}
+		if (random == 7)
+		{
+			random = 5;
+		}
 		//repeat unitl non zero answer
 		while (random == 0)
 		{
-			random = (int)(crandom() * 2);
+			random = (int)(crandom() * 5);
 			if (random < 0)
 			{
 				random = random * -1;
 			}
-			random += 1;
+			random += 3;
+			if (random == 4)
+			{
+				random = 3;
+			}
+			if (random == 5 || random == 6)
+			{
+				random = 4;
+			}
+			if (random == 7)
+			{
+				random = 5;
+			}
 		}
 		gi.cprintf(ent, 1, "random int: %d\n", random);
 	}

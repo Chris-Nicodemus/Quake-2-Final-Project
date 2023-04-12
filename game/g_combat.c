@@ -538,7 +538,8 @@ void T_Damage (edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir,
 		VectorCopy (point, client->damage_from);
 	}
 	char *classname = attacker->classname;
-	char monsterChecker[5] = { 0 };
+	//changed monsterChecker from monsterChecker[5] to *monsterChecker
+	char* monsterChecker = (char*)malloc(5);
 	memcpy(monsterChecker, classname, 5);
 	//vec3_t angles;
 	//trace_t		tr;
@@ -551,7 +552,7 @@ void T_Damage (edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir,
 			//gi.bprintf(1, "classname: %s\n", attacker->classname);
 			//tr = gi.trace(targ->s.origin, NULL, NULL, attacker->s.origin, targ, MASK_SHOT);
 			client->inCombat = true;
-			client->turn = true;
+			client->turn = false;
 			client->enemy = attacker;
 			shopOpen = false;
 			monster_think(attacker);
@@ -572,6 +573,7 @@ void T_Damage (edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir,
 			client = attacker->client;
 			client->inCombat = true;
 			client->enemy = targ;
+			client->turn = true;
 			shopOpen = false;
 			monster_think(targ);
 			Cmd_CombatBegin_f(attacker);
