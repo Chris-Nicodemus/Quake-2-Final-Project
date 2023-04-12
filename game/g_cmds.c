@@ -1002,9 +1002,16 @@ void Cmd_Stats_f(edict_t* ent)
 	//to be finished
 }
 
+void Cmd_Skills_f(edict_t* ent)
+{
+	if (Q_stricmp(gi.argv(1), "hero") == 0)
+	{
+		gi.cprintf(ent, 1, "Hero Skills:\nHope --- Revives Fallen Allies \tCost:40\nHoly Shield --- Temp Health for Allies \tCost:30\nSmite --- Powerful Attack, Ignores Shrouds \tCost:15");
+	}
+}
 void Cmd_Buy_f(edict_t* ent)
 {
-	char* name;;
+	char* name;
 	int			index;
 	int			i;
 	qboolean	give_all;
@@ -1685,20 +1692,8 @@ void Cmd_Gunpowder_f(edict_t* ent)
 	gi.cprintf(ent, 1, "You now have %d gunpowder\n", ent->client->gunpowder);
 }
 
-//Party member attack damage calculation
-void Cmd_PartyAttack_f(edict_t* ent)
-{
-
-}
-
-//Monster attack damage calculation
-void Cmd_MonsterAttack_f(edict_t* ent)
-{
-
-}
-
-//main combat function
-void Cmd_Combat_f(edict_t* ent)
+//Handles win state
+void Cmd_CombatWon_f(edict_t* ent)
 {
 	gclient_t* client;
 
@@ -1714,13 +1709,26 @@ void Cmd_Combat_f(edict_t* ent)
 	edict_t* enemy;
 	enemy = client->enemy;
 
-	if (client->turn)
-	{
+	client->gold = client->gold + enemy->goldValue;
+	client->scales = client->scales + enemy->scaleValue;
+	client->gunpowder = client->gunpowder + enemy->gunpowderValue;
 
+	if (client->inCombat)
+	{
+		client->inCombat = false;
 	}
+
+	if (ent->client->showhelp)
+	{
+		Cmd_Help_f(ent);
+	}
+
+	gi.centerprintf(ent, "You Won!");
 }
 
 //if battle ends or you run from battle, enemy stats and values are cleaned
+int partyIndex = 1;
+int monsterIndex = 1;
 void Cmd_CleanValues_f(edict_t* ent)
 {
 	gclient_t* client;
@@ -1745,6 +1753,44 @@ void Cmd_CleanValues_f(edict_t* ent)
 	enemy->enemy3Type = 0;
 
 	client->enemy = NULL;
+
+	partyIndex = 1;
+	monsterIndex = 1;
+}
+
+//Party member attack damage calculation
+int PartyAttack(edict_t* ent, int target, int damage)
+{
+	return 0;
+}
+
+//Monster attack damage calculation
+int MonsterAttack(edict_t* ent, int target, int damage)
+{
+	return 0;
+}
+
+//main combat function
+void Cmd_Combat_f(edict_t* ent)
+{
+	gclient_t* client;
+
+	if (ent->client)
+	{
+		client = ent->client;
+	}
+	else
+	{
+		return;
+	}
+
+	edict_t* enemy;
+	enemy = client->enemy;
+
+	if (client->turn)
+	{
+
+	}
 }
 
 void Cmd_Run_f(edict_t* ent)
@@ -2310,6 +2356,12 @@ void ClientCommand (edict_t *ent)
 		Cmd_Test_f(ent);
 		return;
 	}
+	if (Q_stricmp(cmd, "skills") == 0)
+	{
+		Cmd_Skills_f(ent);
+		return;
+	}
+
 	if (level.intermissiontime)
 		return;
 

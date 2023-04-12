@@ -981,6 +981,7 @@ struct gclient_s
 	int			heroArmor;
 	int			heroWeapon;
 	qboolean	heroDead;
+	qboolean	heroBuffer;
 
 	int			rangerHealth;
 	int			rangerMP;
@@ -999,6 +1000,7 @@ struct gclient_s
 	int			warriorArmor;
 	int			warriorWeapon;
 	qboolean	warriorDead;
+	qboolean	warriorTaunt;
 };
 
 
@@ -1165,12 +1167,15 @@ struct edict_s
 	//hardcode the armor for each monster type
 	int			enemy1Type;
 	int			enemy1Health;
+	qboolean	demonShroud1;
 
 	int			enemy2Type;
 	int			enemy2Health;
+	qboolean	demonShroud2;
 
 	int			enemy3Type;
 	int			enemy3Health;
+	qboolean	demonShroud3;
 };
 
 //RPG mod armor types

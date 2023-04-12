@@ -344,6 +344,9 @@ char* GetPartyName(int classType)
 extern int numEnemies;
 extern qboolean test;
 extern qboolean firstCombat;
+extern int monsterIndex;
+extern int partyIndex;
+
 void CombatScreen(edict_t* ent)
 {
 	gclient_t* client = ent->client;
@@ -369,11 +372,23 @@ void CombatScreen(edict_t* ent)
 	int spacelen = strlen(space);
 
 	char* guide;
+	//says what is happening
+	char* info;
 
 	//enemy list and guide info
 	switch (numEnemies)
 	{
 	case 0:
+		if (client->inCombat)
+		{
+			Cmd_CombatWon_f(ent);
+			//ripped from killed function in g_combat.c
+			enemy->touch = NULL;
+			monster_death_use(enemy);
+			enemy->die(enemy, ent, ent, 0, NULL);
+
+			Cmd_CleanValues_f(ent);
+		}
 		enemies = "NOT IN COMBAT";
 		guide = "Use some items or the hero's hope skill to heal!";
 		break;
