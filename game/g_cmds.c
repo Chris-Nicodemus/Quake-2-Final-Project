@@ -1005,12 +1005,159 @@ void Cmd_Stats_f(edict_t* ent)
 	//to be finished
 }
 
+//Use a skill
+void Cmd_UseSkill_f(edict_t* ent)
+{
+	gclient_t* client;
+	if (ent->client)
+	{
+		client = ent->client;
+	}
+	else
+	{
+		return;
+	}
+	//This check has to be done before declaration of enemy.
+	if ((Q_stricmp(gi.argv(1), "hero") == 0))
+	{
+		if (gi.argc() == 3)
+		{
+			//hope skill
+			if (Q_stricmp(gi.argv(2), "hope") == 0)
+			{
+				gi.cprintf(ent, 1, "Got to hope!\n");
+					//cancel if in combat and it is not hero's turn. This has to be done so that the player can activate this skill while out of combat
+					if (client->inCombat && !(partyIndex == 1) && !client->turn)
+					{
+						gi.cprintf(ent, 1, "It is not the hero\'s turn!\n");
+						return;
+					}
+
+				//check for MP
+				if (client->heroMP >= 40)
+				{
+					//do the skill
+					if (client->rangerDead)
+					{
+						client->rangerDead = false;
+						client->rangerHealth = 40;
+					}
+					if (client->wizardDead)
+					{
+						client->wizardDead = false;
+						client->wizardHealth = 40;
+					}
+					if (client->warriorDead)
+					{
+						client->warriorDead = false;
+						client->warriorHealth = 40;
+					}
+					client->heroMP = client->heroMP - 40;
+					gi.cprintf(ent, 1, "You revived your party!\n");
+					CombatScreen(ent);
+					if(client->inCombat)
+					{
+					partyIndex++;
+					}
+					return;
+				}
+				else
+				{
+					gi.cprintf(ent, 1, "You don\'t have enough MP!\n");
+				}
+			}
+		}
+	}
+
+	//declare enemy
+	edict_t* enemy;
+	enemy = client->enemy;
+	if (!enemy)
+	{
+		return;
+	}
+	//hero skills
+	if (Q_stricmp(gi.argv(1), "hero") == 0)
+	{
+		//contains all 2 argument skills
+		if (gi.argc() == 3)
+		{	
+			//most skills cannot be used when not in combat, not your turn, and not on the character's initiative
+			if (!client->inCombat)
+			{
+				gi.cprintf(ent, 1, "Skill can only be used in battle!\n");
+				return;
+			}
+			if (!client->turn)
+			{
+				gi.cprintf(ent, 1, "It is not your turn yet!\n");
+				return;
+			}
+			if (!(partyIndex == 1))
+			{
+				gi.cprintf(ent, 1, "It is not the hero\'s turn!\n");
+				return;
+			}
+
+			if (Q_stricmp(gi.argv(2), "holyshield") == 0)
+			{
+				if (client->heroMP >= 30)
+				{
+					//do skill
+					client->heroBuffer = true;
+					client->heroTempHealth = 20;
+					client->rangerTempHealth = 20;
+					client->wizardTempHealth = 20;
+					client->warriorTempHealth = 20;
+
+					//take cost
+					client->heroMP = client->heroMP - 30;
+
+					//find next turn
+					partyIndex++;
+					switch (partyIndex)
+					{
+					case CLASS_RANGER:
+						if (client->rangerDead)
+						{
+							partyIndex++;
+						}
+					case CLASS_WIZARD:
+						if (client->wizardDead)
+						{
+							partyIndex++;
+						}
+					case CLASS_WARRIOR:
+						if (client->warriorDead)
+						{
+							client->turn = false;
+							partyIndex = 1;
+						}
+					}
+
+					//update screen
+					CombatScreen(ent);
+				}
+				else
+				{
+					gi.centerprintf(ent, 1, "You don\'t have enough MP!\n");
+				}
+			}
+		}
+		if (gi.argc() == 4)
+		{
+			return;
+		}
+	}
+}
+
+//lists skills that characters can use
 void Cmd_Skills_f(edict_t* ent)
 {
-	char* hero = "Hero Skills:\nHope --- Revives Fallen Allies \tCost:40\nHoly Shield --- Temp Health for Allies \tCost:30\nSmite --- Powerful Attack, Ignores Shrouds \tCost:15\n";
-	char* ranger = "Ranger Skills:\nRain of Arrows --- Strikes All \tCost:25\nHeartpiercer --- Powerful Attack, Extremely Effective Against Armor \tCost:30\n";
-	char* wizard = "Wizard Skills:\nFire Ball --- Strikes All, Powerful Against Weaker Enemies \tCost:35\nCurse of Frailty --- Reduces Damage of an Enemy\'s Attack \tCost:20\nLightning --- Severely Damage An Enemy \tCost:40\n";
-	char* warrior = "Warrior Skills:\nTaunt --- All Enemies Attack You Next Turn \tCost:35\nShield Bash --- Stronger Attack, Increased Defense for two Turns \tCost:25";
+	char* hero = "Hero Skills:\nHope --- Revives Fallen Allies \tCost:40\nHolyShield --- Temp Health for Allies \tCost:30\nSmite --- Powerful Attack, Ignores Shrouds \tCost:15\n";
+	char* ranger = "Ranger Skills:\nArrowRain --- Strikes All \tCost:25\nHeartpiercer --- Powerful Attack, Extremely Effective Against Armor \tCost:30\n";
+	char* wizard = "Wizard Skills:\nFireBall --- Strikes All, Powerful Against Weaker Enemies \tCost:35\nFrailtyCurse --- Reduces Damage of an Enemy\'s Attack \tCost:20\nLightning --- Severely Damage An Enemy \tCost:40\n";
+	char* warrior = "Warrior Skills:\nTaunt --- All Enemies Attack You Next Turn \tCost:35\nShieldBash --- Stronger Attack, Increased Defense for two Turns \tCost:25";
 
 	//shows skills of current turn
 	if (gi.argc() == 1 && ent->client->turn)
@@ -1062,6 +1209,7 @@ void Cmd_Skills_f(edict_t* ent)
 		return;
 	}
 }
+
 void Cmd_Buy_f(edict_t* ent)
 {
 	char* name;
@@ -2315,7 +2463,7 @@ void ClientCommand (edict_t *ent)
 
 	cmd = gi.argv(0);
 
-	if (Q_stricmp (cmd, "players") == 0)
+	/*if (Q_stricmp(cmd, "players") == 0)
 	{
 		Cmd_Players_f (ent);
 		return;
@@ -2334,7 +2482,7 @@ void ClientCommand (edict_t *ent)
 	{
 		Cmd_Score_f (ent);
 		return;
-	}
+	}*/
 	if (Q_stricmp (cmd, "help") == 0)
 	{
 		Cmd_Help_f (ent);
@@ -2397,7 +2545,7 @@ void ClientCommand (edict_t *ent)
 		Cmd_Run_f(ent);
 		return;
 	}
-	if (Q_stricmp(cmd, "roll") == 0)
+	/*if (Q_stricmp(cmd, "roll") == 0)
 	{
 		Cmd_Roll_f(ent);
 		return;
@@ -2406,10 +2554,15 @@ void ClientCommand (edict_t *ent)
 	{
 		Cmd_Test_f(ent);
 		return;
-	}
+	}*/
 	if (Q_stricmp(cmd, "skills") == 0)
 	{
 		Cmd_Skills_f(ent);
+		return;
+	}
+	if (Q_stricmp(cmd, "useskill") == 0)
+	{
+		Cmd_UseSkill_f(ent);
 		return;
 	}
 

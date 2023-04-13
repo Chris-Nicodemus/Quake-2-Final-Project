@@ -982,18 +982,21 @@ struct gclient_s
 	int			heroWeapon;
 	qboolean	heroDead;
 	qboolean	heroBuffer;
+	int			heroTempHealth;
 
 	int			rangerHealth;
 	int			rangerMP;
 	int			rangerArmor;
 	int			rangerWeapon;
 	qboolean	rangerDead;
+	int			rangerTempHealth;
 
 	int			wizardHealth;
 	int			wizardMP;
 	int			wizardArmor;
 	int			wizardWeapon;
 	qboolean	wizardDead;
+	int			wizardTempHealth;
 
 	int			warriorHealth;
 	int			warriorMP;
@@ -1001,6 +1004,7 @@ struct gclient_s
 	int			warriorWeapon;
 	qboolean	warriorDead;
 	qboolean	warriorTaunt;
+	int			warriorTempHealth;
 };
 
 

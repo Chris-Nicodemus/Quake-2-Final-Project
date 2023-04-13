@@ -374,6 +374,20 @@ void CombatScreen(edict_t* ent)
 	char* guide;
 	//says what is happening
 	char* info;
+	if (client->turn)
+	{
+		info = "It is your turn!";
+	}
+
+	if (!client->turn)
+	{
+		info = "It is not your turn!";
+	}
+
+	if (!client->inCombat)
+	{
+		info = "To start combat, get shot by or shoot an enemy!";
+	}
 
 	//enemy list and guide info
 	switch (numEnemies)
@@ -475,10 +489,10 @@ void CombatScreen(edict_t* ent)
 			title,
 			enemies,
 			guide,
-			game.helpmessage2,
-			client->rangerHealth, client->rangerMP,
-			client->wizardHealth, client->wizardMP,
-			client->warriorHealth, client->warriorMP);
+			info,
+			client->rangerHealth + client->rangerTempHealth, client->rangerMP,
+			client->wizardHealth + client->wizardTempHealth, client->wizardMP,
+			client->warriorHealth + client->warriorTempHealth, client->warriorMP);
 	}
 	else
 	{
@@ -596,7 +610,7 @@ void G_SetStats (edict_t *ent)
 	// health
 	//
 	ent->client->ps.stats[STAT_HEALTH_ICON] = level.pic_health;
-	ent->client->ps.stats[STAT_HEALTH] = ent->health;
+	ent->client->ps.stats[STAT_HEALTH] = ent->health + ent->client->heroTempHealth;
 
 	//
 	// ammo
