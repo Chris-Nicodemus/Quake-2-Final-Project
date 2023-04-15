@@ -534,7 +534,7 @@ void CombatScreen(edict_t* ent)
 		title,
 		enemies,
 		guide,
-		game.helpmessage2,
+		info,
 		client->rangerHealth, client->rangerMP,
 		client->wizardHealth, client->wizardMP,
 		client->warriorHealth, client->warriorMP);

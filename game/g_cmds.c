@@ -1811,7 +1811,7 @@ void Cmd_UseSkill_f(edict_t* ent)
 						//heartpiercer text is overrided if that kills the enemy
 						if (!(Q_stricmp(info, "You have defeated an enemy!") == 0))
 						{
-							gi.cprintf(ent, 1, "Got to info set\n");
+							//gi.cprintf(ent, 1, "Got to info set\n");
 							info = "You used heartpiercer on an enemy!";
 							infoSet = true;
 						}
