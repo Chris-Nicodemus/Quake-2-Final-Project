@@ -1753,17 +1753,17 @@ void Cmd_UseSkill_f(edict_t* ent)
 
 					if (enemy->enemy2Type != MONSTER_NONE)
 					{
-						PartyAttack(ent, 1, 5, true, true);
+						PartyAttack(ent, 2, 5, true, true);
 					}
 
 					if (enemy->enemy3Type != MONSTER_NONE)
 					{
-						PartyAttack(ent, 1, 5, true, true);
+						PartyAttack(ent, 3, 5, true, true);
 					}
 
 					//say what happened
-					guide = "You attacked all enemies!";
-					guideSet = true;
+					info = "You attacked all enemies with rain of arrows!";
+					infoSet = true;
 
 					//MP cost
 					client->rangerMP = client->rangerMP - 25;
@@ -1952,6 +1952,355 @@ void Cmd_UseSkill_f(edict_t* ent)
 	//wizard skills
 	if (Q_stricmp(gi.argv(1), "wizard") == 0)
 	{
+		//turn and dead exclusions
+		if (!(partyIndex == 3))
+		{
+			gi.cprintf(ent, 1, "It is not the wizard\'s turn!\n");
+			return;
+		}
+
+		if (client->wizardDead)
+		{
+			gi.cprintf(ent, 1, "The wizard is dead!\n");
+			return;
+		}
+
+		//fireball, frailty curse with one enemy, and lightning with one enemy
+		if (gi.argc() == 3)
+		{
+			//fireball
+			if (Q_stricmp(gi.argv(2), "fireball") == 0)
+			{
+				//check for MP
+				if (client->wizardMP >= 35)
+				{
+					int damage = 15;
+					//do skill: attack all living enemies
+					if (enemy->enemy1Type != MONSTER_NONE)
+					{
+						if (enemy->enemy1Type == MONSTER_GOBLIN || enemy->enemy1Type == MONSTER_ORC)
+						{
+							PartyAttack(ent, 1, damage + 10, true, false);
+						}
+						else
+						{
+							PartyAttack(ent, 1, damage, true, false);
+						}
+					}
+
+					if (enemy->enemy2Type != MONSTER_NONE)
+					{
+							if (enemy->enemy1Type == MONSTER_GOBLIN || enemy->enemy1Type == MONSTER_ORC)
+							{
+								PartyAttack(ent, 1, damage + 10, true, false);
+							}
+							else
+							{
+								PartyAttack(ent, 1, damage, true, false);
+							}
+					}
+
+					if (enemy->enemy3Type != MONSTER_NONE)
+					{
+							if (enemy->enemy3Type == MONSTER_GOBLIN || enemy->enemy3Type == MONSTER_ORC)
+							{
+								PartyAttack(ent, 3, damage + 10, true, false);
+							}
+							else
+							{
+								PartyAttack(ent, 3, damage, true, false);
+							}
+					}
+
+					//say what happened
+					info = "You attacked all enemies with a fireball!";
+					infoSet = true;
+
+					//MP cost
+					client->wizardMP = client->wizardMP - 35;
+
+					//get next turn
+					partyIndex++;
+					PartyNextTurn(ent);
+
+					//show stuff on screen
+					CombatScreen(ent);
+				}
+			}
+
+			//if there is only one enemy
+			if (Q_stricmp(gi.argv(2), "frailtycurse") == 0)
+			{
+				//check if call was correct
+				if (numEnemies > 1)
+				{
+					gi.cprintf(ent, 1, "Specify your target!\n");
+				}
+				else if (numEnemies == 1)
+				{
+					//check for MP, if high enough, do the skill
+					if (client->wizardMP >= 25)
+					{
+						//bonus for skill
+						int damage = 5;
+
+						//do the skill
+						PartyAttack(ent, 1, damage, true, false);
+						enemy->enemy1Weak = true;
+
+						//take the MP
+						client->wizardMP = client->wizardMP - 25;
+
+						//find next turn
+						partyIndex++;
+						PartyNextTurn(ent);
+
+						//gi.cprintf(ent, 1, "Got to info set\n");
+						info = "You used a curse of frailty on an enemy!";
+						infoSet = true;
+						
+						//update screen
+						CombatScreen(ent);
+
+					}
+					else
+					{
+						gi.cprintf(ent, 1, "You don\'t have enough MP!\n");
+						return;
+					}
+				}
+			}
+
+			if (Q_stricmp(gi.argv(2), "lightning") == 0)
+			{
+				//check if call was correct
+				if (numEnemies > 1)
+				{
+					gi.cprintf(ent, 1, "Specify your target!\n");
+				}
+				else if (numEnemies == 1)
+				{
+					//check for MP, if high enough, do the skill
+					if (client->wizardMP >= 40)
+					{
+						//bonus for skill
+						int damage = 60;
+
+						//do the skill
+						PartyAttack(ent, 1, damage, false, false);
+
+						//take the MP
+						client->wizardMP = client->wizardMP - 40;
+
+						//find next turn
+						partyIndex++;
+						PartyNextTurn(ent);
+
+						//gi.cprintf(ent, 1, "Got to info set\n");
+						info = "You struck an enemy with lightning!";
+						infoSet = true;
+
+						//update screen
+						CombatScreen(ent);
+
+					}
+					else
+					{
+						gi.cprintf(ent, 1, "You don\'t have enough MP!\n");
+						return;
+					}
+				}
+			}
+			return;
+		}
+
+		if (gi.argc() == 4)
+		{
+			if (Q_stricmp(gi.argv(2), "frailtycurse") == 0)
+			{
+
+				//check for mana
+				if (client->wizardMP >= 25)
+				{
+					int target = 0;
+					int damage = 5;
+					//find out who the target of the attack is, then apply weakness
+					switch (numEnemies)
+					{
+					case 1:
+						target = 1;
+						enemy->enemy1Weak = true;
+						break;
+					case 2:
+						if (Q_stricmp(gi.argv(3), "left") == 0)
+						{
+							target = 1;
+							enemy->enemy1Weak = true;
+							break;
+						}
+						if (Q_stricmp(gi.argv(3), "right") == 0)
+						{
+							target = 2;
+							enemy->enemy2Weak = true;
+							break;
+						}
+
+						//invalid arg
+						if (target == 0)
+						{
+							gi.cprintf(ent, 1, "You did not enter a valid target!\n");
+							return;
+						}
+						break;
+					case 3:
+						if (Q_stricmp(gi.argv(3), "left") == 0)
+						{
+							target = 1;
+							enemy->enemy1Weak = true;
+							break;
+						}
+						if (Q_stricmp(gi.argv(3), "center") == 0)
+						{
+							target = 2;
+							enemy->enemy2Weak = true;
+							break;
+						}
+						if (Q_stricmp(gi.argv(3), "right") == 0)
+						{
+							target = 3;
+							enemy->enemy3Weak = true;
+							break;
+						}
+
+						//invalid arg
+						if (target == 0)
+						{
+							gi.cprintf(ent, 1, "You did not enter a valid target!\n");
+							return;
+						}
+						break;
+					}
+
+					//do the skill if target is working
+					if (target != 0)
+					{
+
+						PartyAttack(ent, target, damage, true, false);
+
+						client->wizardMP = client->wizardMP - 25;
+
+						info = "You used a curse of frailty on an enemy!";
+						infoSet = true;
+
+						partyIndex++;
+						PartyNextTurn(ent);
+
+						CombatScreen(ent);
+					}
+					else
+					{
+						gi.cprintf(ent, 1, "Something went wrong!\n");
+						return;
+					}
+				}
+				//don't have enough mana
+				else
+				{
+					gi.cprintf(ent, 1, "You don\'t have enough MP!\n");
+					return;
+				}
+			}
+
+			if (Q_stricmp(gi.argv(2), "lightning") == 0)
+			{
+
+				//check for mana
+				if (client->wizardMP >= 40)
+				{
+					int target = 0;
+					int damage = 60;
+					//find out who the target of the attack is, then apply weakness
+					switch (numEnemies)
+					{
+					case 1:
+						target = 1;
+						break;
+					case 2:
+						if (Q_stricmp(gi.argv(3), "left") == 0)
+						{
+							target = 1;
+							break;
+						}
+						if (Q_stricmp(gi.argv(3), "right") == 0)
+						{
+							target = 2;
+							break;
+						}
+
+						//invalid arg
+						if (target == 0)
+						{
+							gi.cprintf(ent, 1, "You did not enter a valid target!\n");
+							return;
+						}
+						break;
+					case 3:
+						if (Q_stricmp(gi.argv(3), "left") == 0)
+						{
+							target = 1;
+							break;
+						}
+						if (Q_stricmp(gi.argv(3), "center") == 0)
+						{
+							target = 2;
+							break;
+						}
+						if (Q_stricmp(gi.argv(3), "right") == 0)
+						{
+							target = 3;
+							break;
+						}
+
+						//invalid arg
+						if (target == 0)
+						{
+							gi.cprintf(ent, 1, "You did not enter a valid target!\n");
+							return;
+						}
+						break;
+					}
+
+					//do the skill if target is working
+					if (target != 0)
+					{
+
+						PartyAttack(ent, target, damage, false, false);
+
+						client->wizardMP = client->wizardMP - 40;
+
+						info = "You struck an enemy with lightning!";
+						infoSet = true;
+
+						partyIndex++;
+						PartyNextTurn(ent);
+
+						CombatScreen(ent);
+					}
+					else
+					{
+						gi.cprintf(ent, 1, "Something went wrong!\n");
+						return;
+					}
+				}
+				//don't have enough mana
+				else
+				{
+					gi.cprintf(ent, 1, "You don\'t have enough MP!\n");
+					return;
+				}
+			}
+			return;
+		}
 	}
 }
 
@@ -1960,7 +2309,7 @@ void Cmd_Skills_f(edict_t* ent)
 {
 	char* hero = "Hero Skills:\nHope --- Revives Fallen Allies \tCost:40\nHolyShield --- Temp Health for Allies \tCost:30\nSmite --- Powerful Attack, Ignores Shrouds \tCost:20\n";
 	char* ranger = "Ranger Skills:\nArrowRain --- Strikes All \tCost:25\nHeartpiercer --- Powerful Attack, Extremely Effective Against Armor \tCost:30\n";
-	char* wizard = "Wizard Skills:\nFireBall --- Strikes All, Powerful Against Weaker Enemies \tCost:35\nFrailtyCurse --- Reduces Damage of an Enemy\'s Attack \tCost:20\nLightning --- Severely Damage An Enemy \tCost:40\n";
+	char* wizard = "Wizard Skills:\nFireBall --- Strikes All, Powerful Against Weaker Enemies \tCost:35\nFrailtyCurse --- Halves Damage of an Enemy\'s Attack \tCost:25\nLightning --- Severely Damage An Enemy \tCost:40\n";
 	char* warrior = "Warrior Skills:\nTaunt --- All Enemies Attack You Next Turn \tCost:35\nShieldBash --- Stronger Attack, Increased Defense for two Turns \tCost:25";
 
 	//shows skills of current turn
@@ -3223,7 +3572,16 @@ void Cmd_Roll_f(edict_t* ent)
 qboolean test;
 void Cmd_Test_f (edict_t* ent)
 {
-	G_FreeEdict(ent->client->enemy);
+	//G_FreeEdict(ent->client->enemy);
+	if (gi.argc() == 2)
+	{
+		partyIndex = atoi(gi.argv(1));
+	}
+}
+
+void Cmd_Guide_f(edict_t* ent)
+{
+	CombatScreen(ent);
 }
 /*
 =================
@@ -3339,6 +3697,11 @@ void ClientCommand (edict_t *ent)
 	if (Q_stricmp(cmd, "useskill") == 0)
 	{
 		Cmd_UseSkill_f(ent);
+		return;
+	}
+	if (Q_stricmp(cmd, "guide") == 0)
+	{
+		Cmd_Guide_f(ent);
 		return;
 	}
 
