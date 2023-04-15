@@ -1004,6 +1004,7 @@ void PartyAttack(edict_t* ent, int target, int damage, qboolean weapon, qboolean
 	edict_t* enemy;
 	enemy = client->enemy;
 
+	//base attack random damage
 	if (base)
 	{
 		//range
@@ -1016,7 +1017,6 @@ void PartyAttack(edict_t* ent, int target, int damage, qboolean weapon, qboolean
 		}
 		//increase min values
 		deal += 5;
-		deal += damage;
 	}
 	//increase damage by weapon value if weapon is true
 	if(weapon)
@@ -1038,7 +1038,9 @@ void PartyAttack(edict_t* ent, int target, int damage, qboolean weapon, qboolean
 		}
 	}
 
-	
+	//adds damage bonus if skill
+	deal += damage;
+
 	switch (target)
 	{
 	case 1:
@@ -1067,7 +1069,7 @@ void PartyAttack(edict_t* ent, int target, int damage, qboolean weapon, qboolean
 			sprintf(dealStr, "%i", deal);
 			int dLen = strlen(dealStr);
 
-			char* begin = "Your smite dealt ";
+			char* begin = "Your attack dealt ";
 			int beginLen = strlen(begin);
 
 			char* end = " damage!";
@@ -1080,7 +1082,7 @@ void PartyAttack(edict_t* ent, int target, int damage, qboolean weapon, qboolean
 			guideSet = true;
 		}
 
-		//normal attack
+		//normal smite
 		if (!enemy->demonShroud1 && smite)
 		{
 			enemy->enemy1Health = enemy->enemy1Health - deal;
@@ -1093,7 +1095,33 @@ void PartyAttack(edict_t* ent, int target, int damage, qboolean weapon, qboolean
 			sprintf(dealStr, "%i", deal);
 			int dLen = strlen(dealStr);
 
-			char* begin = "Your smite dealt ";
+			char* begin = "Your attack dealt ";
+			int beginLen = strlen(begin);
+
+			char* end = " damage!";
+			int endLen = strlen(end);
+			guide = malloc(beginLen + dLen + endLen);
+
+			memcpy(guide, begin, beginLen);
+			memcpy(guide + beginLen, dealStr, dLen);
+			memcpy(guide + beginLen + dLen, end, endLen);
+			guideSet = true;
+		}
+
+		//normal attack
+		if (!enemy->demonShroud1 && !smite)
+		{
+			enemy->enemy1Health = enemy->enemy1Health - deal;
+
+			info = "You used attack on an enemy!";
+			infoSet = true;
+
+			//guide card
+			char* dealStr = malloc(2);
+			sprintf(dealStr, "%i", deal);
+			int dLen = strlen(dealStr);
+
+			char* begin = "Your attack dealt ";
 			int beginLen = strlen(begin);
 
 			char* end = " damage!";
@@ -1123,6 +1151,96 @@ void PartyAttack(edict_t* ent, int target, int damage, qboolean weapon, qboolean
 		}
 		break;
 	case 2:
+		if (enemy->demonShroud2 && !smite)
+		{
+			enemy->demonShroud2 = false;
+			info = "The demons\'s shroud blocked the attack!";
+			infoSet = true;
+
+			guide = "Your attack did no damage!";
+			guideSet = true;
+			return;
+		}
+		else if (enemy->demonShroud2 && smite)
+		{
+			//damage
+			enemy->demonShroud2 = false;
+			enemy->enemy2Health = enemy->enemy2Health - deal;
+
+			//info card
+			info = "The demons\'s shroud was destroyed by your smite!";
+			infoSet = true;
+
+			//guide card
+			char* dealStr = malloc(2);
+			sprintf(dealStr, "%i", deal);
+			int dLen = strlen(dealStr);
+
+			char* begin = "Your attack dealt ";
+			int beginLen = strlen(begin);
+
+			char* end = " damage!";
+			int endLen = strlen(end);
+			guide = malloc(beginLen + dLen + endLen);
+
+			memcpy(guide, begin, beginLen);
+			memcpy(guide + beginLen, dealStr, dLen);
+			memcpy(guide + beginLen + dLen, end, endLen);
+			guideSet = true;
+		}
+
+		//normal smite
+		if (!enemy->demonShroud2 && smite)
+		{
+			enemy->enemy2Health = enemy->enemy2Health - deal;
+
+			info = "You used smite on an enemy!";
+			infoSet = true;
+
+			//guide card
+			char* dealStr = malloc(2);
+			sprintf(dealStr, "%i", deal);
+			int dLen = strlen(dealStr);
+
+			char* begin = "Your attack dealt ";
+			int beginLen = strlen(begin);
+
+			char* end = " damage!";
+			int endLen = strlen(end);
+			guide = malloc(beginLen + dLen + endLen);
+
+			memcpy(guide, begin, beginLen);
+			memcpy(guide + beginLen, dealStr, dLen);
+			memcpy(guide + beginLen + dLen, end, endLen);
+			guideSet = true;
+		}
+
+		//normal attack
+		if (!enemy->demonShroud2 && !smite)
+		{
+			enemy->enemy2Health = enemy->enemy2Health - deal;
+
+			info = "You used attack on an enemy!";
+			infoSet = true;
+
+			//guide card
+			char* dealStr = malloc(2);
+			sprintf(dealStr, "%i", deal);
+			int dLen = strlen(dealStr);
+
+			char* begin = "Your attack dealt ";
+			int beginLen = strlen(begin);
+
+			char* end = " damage!";
+			int endLen = strlen(end);
+			guide = malloc(beginLen + dLen + endLen);
+
+			memcpy(guide, begin, beginLen);
+			memcpy(guide + beginLen, dealStr, dLen);
+			memcpy(guide + beginLen + dLen, end, endLen);
+			guideSet = true;
+		}
+
 		//check if enemy dead, and shift enemies down if so
 		if (enemy->enemy2Health <= 0)
 		{
@@ -1140,6 +1258,96 @@ void PartyAttack(edict_t* ent, int target, int damage, qboolean weapon, qboolean
 		}
 		break;
 	case 3:
+		if (enemy->demonShroud3 && !smite)
+		{
+			enemy->demonShroud3 = false;
+			info = "The demons\'s shroud blocked the attack!";
+			infoSet = true;
+
+			guide = "Your attack did no damage!";
+			guideSet = true;
+			return;
+		}
+		else if (enemy->demonShroud3 && smite)
+		{
+			//damage
+			enemy->demonShroud3 = false;
+			enemy->enemy3Health = enemy->enemy3Health - deal;
+
+			//info card
+			info = "The demons\'s shroud was destroyed by your smite!";
+			infoSet = true;
+
+			//guide card
+			char* dealStr = malloc(2);
+			sprintf(dealStr, "%i", deal);
+			int dLen = strlen(dealStr);
+
+			char* begin = "Your attack dealt ";
+			int beginLen = strlen(begin);
+
+			char* end = " damage!";
+			int endLen = strlen(end);
+			guide = malloc(beginLen + dLen + endLen);
+
+			memcpy(guide, begin, beginLen);
+			memcpy(guide + beginLen, dealStr, dLen);
+			memcpy(guide + beginLen + dLen, end, endLen);
+			guideSet = true;
+		}
+
+		//normal smite
+		if (!enemy->demonShroud3 && smite)
+		{
+			enemy->enemy3Health = enemy->enemy3Health - deal;
+
+			info = "You used smite on an enemy!";
+			infoSet = true;
+
+			//guide card
+			char* dealStr = malloc(2);
+			sprintf(dealStr, "%i", deal);
+			int dLen = strlen(dealStr);
+
+			char* begin = "Your attack dealt ";
+			int beginLen = strlen(begin);
+
+			char* end = " damage!";
+			int endLen = strlen(end);
+			guide = malloc(beginLen + dLen + endLen);
+
+			memcpy(guide, begin, beginLen);
+			memcpy(guide + beginLen, dealStr, dLen);
+			memcpy(guide + beginLen + dLen, end, endLen);
+			guideSet = true;
+		}
+
+		//normal attack
+		if (!enemy->demonShroud3 && !smite)
+		{
+			enemy->enemy3Health = enemy->enemy3Health - deal;
+
+			info = "You used attack on an enemy!";
+			infoSet = true;
+
+			//guide card
+			char* dealStr = malloc(2);
+			sprintf(dealStr, "%i", deal);
+			int dLen = strlen(dealStr);
+
+			char* begin = "Your attack dealt ";
+			int beginLen = strlen(begin);
+
+			char* end = " damage!";
+			int endLen = strlen(end);
+			guide = malloc(beginLen + dLen + endLen);
+
+			memcpy(guide, begin, beginLen);
+			memcpy(guide + beginLen, dealStr, dLen);
+			memcpy(guide + beginLen + dLen, end, endLen);
+			guideSet = true;
+		}
+
 		//check if enemy dead, and clear enemy 3
 		if (enemy->enemy3Health <= 0)
 		{
@@ -1460,7 +1668,7 @@ void Cmd_UseSkill_f(edict_t* ent)
 							target = 1;
 							break;
 						}
-						if (Q_stricmp(gi.argv(2), "center") == 0)
+						if (Q_stricmp(gi.argv(3), "center") == 0)
 						{
 							target = 2;
 							break;
@@ -1481,23 +1689,25 @@ void Cmd_UseSkill_f(edict_t* ent)
 					}
 
 					//do the skill
-					smite = true;
+					
 
 					if (target != 0)
 					{
+						smite = true;
 						PartyAttack(ent, target, 10, true, true);
+
 						client->heroMP = client->heroMP - 20;
+
+						partyIndex++;
+						PartyNextTurn(ent);
+
+						CombatScreen(ent);
 					}
 					else
 					{
 						gi.cprintf(ent, 1, "Something went wrong!\n");
 						return;
 					}
-
-					partyIndex++;
-					PartyNextTurn(ent);
-
-					CombatScreen(ent);
 				}
 				//don't have enough mana
 				else
@@ -1568,7 +1778,7 @@ void Cmd_UseSkill_f(edict_t* ent)
 			}
 
 			//if there is only one enemy
-			if (Q_stricmp(gi.argv(2), "heartpirecer") == 0)
+			if (Q_stricmp(gi.argv(2), "heartpiercer") == 0)
 			{
 				//check if call was correct
 				if (numEnemies > 1)
@@ -1598,6 +1808,13 @@ void Cmd_UseSkill_f(edict_t* ent)
 						partyIndex++;
 						PartyNextTurn(ent);
 
+						//heartpiercer text is overrided if that kills the enemy
+						if (!(Q_stricmp(info, "You have defeated an enemy!") == 0))
+						{
+							gi.cprintf(ent, 1, "Got to info set\n");
+							info = "You used heartpiercer on an enemy!";
+							infoSet = true;
+						}
 						//update screen
 						CombatScreen(ent);
 
@@ -1654,7 +1871,7 @@ void Cmd_UseSkill_f(edict_t* ent)
 							target = 1;
 							break;
 						}
-						if (Q_stricmp(gi.argv(2), "center") == 0)
+						if (Q_stricmp(gi.argv(3), "center") == 0)
 						{
 							target = 2;
 							break;
@@ -1674,7 +1891,7 @@ void Cmd_UseSkill_f(edict_t* ent)
 						break;
 					}
 
-					//do the skill
+					//do the skill if target is working
 					if (target != 0)
 					{
 						switch (target)
@@ -1701,17 +1918,25 @@ void Cmd_UseSkill_f(edict_t* ent)
 
 						PartyAttack(ent, target, damage, true, true);
 						client->rangerMP = client->rangerMP - 30;
+
+						//heartpiercer text is overrided if that kills the enemy
+						if (!(Q_stricmp(info, "You have defeated an enemy!") == 0))
+						{
+							//gi.cprintf(ent, 1, "Got to info set\n");
+							info = "You used heartpiercer on an enemy!";
+							infoSet = true;
+						}
+
+						partyIndex++;
+						PartyNextTurn(ent);
+
+						CombatScreen(ent);
 					}
 					else
 					{
 						gi.cprintf(ent, 1, "Something went wrong!\n");
 						return;
 					}
-
-					partyIndex++;
-					PartyNextTurn(ent);
-
-					CombatScreen(ent);
 				}
 				//don't have enough mana
 				else
@@ -1722,6 +1947,11 @@ void Cmd_UseSkill_f(edict_t* ent)
 			}
 			return;
 		}
+	}
+
+	//wizard skills
+	if (Q_stricmp(gi.argv(1), "wizard") == 0)
+	{
 	}
 }
 
@@ -2993,11 +3223,7 @@ void Cmd_Roll_f(edict_t* ent)
 qboolean test;
 void Cmd_Test_f (edict_t* ent)
 {
-	int number = 46;
-	guide = malloc(50);
-	sprintf(guide, "%i", number);
-	guideSet = true;
-	CombatScreen(ent);
+	G_FreeEdict(ent->client->enemy);
 }
 /*
 =================
