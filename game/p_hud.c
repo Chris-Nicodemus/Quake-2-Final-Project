@@ -347,6 +347,14 @@ extern qboolean firstCombat;
 extern int monsterIndex;
 extern int partyIndex;
 
+//says what you can do or how much damage you did
+char* guide;
+qboolean guideSet;
+
+//says what is happening
+char* info;
+qboolean infoSet;
+
 void CombatScreen(edict_t* ent)
 {
 	gclient_t* client = ent->client;
@@ -371,24 +379,28 @@ void CombatScreen(edict_t* ent)
 	int e3len;
 	int spacelen = strlen(space);
 
-	char* guide;
-	//says what is happening
-	char* info;
-	if (client->turn)
-	{
-		info = "It is your turn!";
-	}
 
-	if (!client->turn)
+	if(!infoSet)
 	{
-		info = "It is not your turn!";
-	}
+		if (client->turn)
+		{
+			info = "It is your turn!";
+		}
 
-	if (!client->inCombat)
+		if (!client->turn)
+		{
+			info = "It is not your turn!";
+		}
+
+		if (!client->inCombat)
+		{
+			info = "To start combat, get shot by or shoot an enemy!";
+		}
+	}
+	else if (infoSet)
 	{
-		info = "To start combat, get shot by or shoot an enemy!";
+		infoSet = false;
 	}
-
 	//enemy list and guide info
 	switch (numEnemies)
 	{
@@ -400,17 +412,23 @@ void CombatScreen(edict_t* ent)
 			enemy->touch = NULL;
 			monster_death_use(enemy);
 			enemy->die(enemy, ent, ent, 0, NULL);
-
+			guide = "You have won!";
 			Cmd_CleanValues_f(ent);
 		}
 		enemies = "NOT IN COMBAT";
-		guide = "Use some items or the hero's hope skill to heal!";
+		if(!guideSet)
+		{
+			guide = "Use some items or the hero's hope skill to heal!";
+		}
 		break;
 	case 1:
 		enemies = GetMonsterName(enemy->enemy1Type);
-		if (client->turn)
+		if (!guideSet)
 		{
-			guide = "Attack, use a skill, use an item, or run!";
+			if (client->turn)
+			{
+				guide = "Attack, use a skill, use an item, or run!";
+			}
 		}
 		break;
 	case 2:
@@ -424,10 +442,12 @@ void CombatScreen(edict_t* ent)
 		memcpy(enemies, e1, e1len);
 		memcpy(enemies + e1len, space, spacelen);
 		memcpy(enemies + e1len + spacelen, e2, e2len);
-
-		if (client->turn)
+		if (!guideSet)
 		{
-			guide = "Attack left or right, use a skill, use an item, or run!";
+			if (client->turn)
+			{
+				guide = "Attack left or right, use a skill, use an item, or run!";
+			}
 		}
 		break;
 	case 3:
@@ -440,24 +460,30 @@ void CombatScreen(edict_t* ent)
 		e3len = strlen(e3);
 
 		enemies = (char*)malloc(e1len + e2len + e3len + spacelen + spacelen);
-		memcpy(enemies, e2, e2len);
-		memcpy(enemies + e2len, space, spacelen);
-		memcpy(enemies + e2len + spacelen, e1, e1len);
+		memcpy(enemies, e1, e1len);
+		memcpy(enemies + e1len, space, spacelen);
+		memcpy(enemies + e1len + spacelen, e2, e2len);
 		memcpy(enemies + e2len + spacelen + e1len, space, spacelen);
 		memcpy(enemies + e2len + spacelen + e1len + spacelen, e3, e3len);
-		if (client->turn)
+
+		if (!guideSet)
 		{
-			guide = "Attack left, right, or center, use a skill, use an item, or run!";
+			if (client->turn)
+			{
+				guide = "Attack left, right, or center, use a skill, use an item, or run!";
+			}
 		}
 		break;
 	}
 
 	//Enemy turn guide
-	if (client->inCombat && !client->turn)
+	if (!guideSet)
 	{
-		guide = "It is not your turn yet! Press \'G\' to continue";
+		if (client->inCombat && !client->turn)
+		{
+			guide = "It is not your turn yet! Press \'G\' to continue";
+		}
 	}
-
 
 	//sets starting stats
 	if (firstCombat)
@@ -516,6 +542,11 @@ void CombatScreen(edict_t* ent)
 	gi.WriteByte(svc_layout);
 	gi.WriteString(string);
 	gi.unicast(ent, true);
+
+	if (guideSet)
+	{
+		guideSet = false;
+	}
 }
 
 /*

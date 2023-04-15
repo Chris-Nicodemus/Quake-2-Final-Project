@@ -933,6 +933,247 @@ void Cmd_Shop_f(edict_t* ent)
 	}
 }
 
+extern char* info;
+extern qboolean infoSet;
+
+extern char* guide;
+extern qboolean guideSet;
+
+qboolean smite;
+qboolean buffer;
+int shieldBash = 0;
+
+extern int numEnemies;
+
+//Finds next turn for player
+void PartyNextTurn(edict_t* ent)
+{
+	gclient_t* client;
+	if (ent->client)
+	{
+		client = ent->client;
+	}
+	else
+	{
+		return;
+	}
+
+	switch (partyIndex)
+	{
+	case CLASS_RANGER:
+		if (client->rangerDead)
+		{
+			partyIndex++;
+		}
+	case CLASS_WIZARD:
+		if (client->wizardDead)
+		{
+			partyIndex++;
+		}
+	case CLASS_WARRIOR:
+		if (client->warriorDead)
+		{
+			client->turn = false;
+			partyIndex = 1;
+		}
+	}
+}
+
+
+//Call CombatScreen outside of this function to get things to show. This allows you to override the info and guide calls so you can put your own text 
+//Party member attack damage calculation
+void PartyAttack(edict_t* ent, int target, int damage, qboolean weapon, qboolean base)
+{
+	gi.cprintf(ent, 1, "Party Attack is getting called\n");
+	int deal = 0;
+
+	gclient_t* client;
+	if (ent->client)
+	{
+		client = ent->client;
+	}
+	else
+	{
+		return;
+	}
+
+	//declare enemy
+	edict_t* enemy;
+	enemy = client->enemy;
+
+	if (base)
+	{
+		//range
+		deal = (int)(crandom() * 6);
+
+		//invert negatives
+		if (deal < 0)
+		{
+			deal = deal * -1;
+		}
+		//increase min values
+		deal += 5;
+		deal += damage;
+	}
+	//increase damage by weapon value if weapon is true
+	if(weapon)
+	{
+		switch (partyIndex)
+		{
+		case CLASS_HERO:
+			deal += (client->heroWeapon * 3);
+			break;
+		case CLASS_RANGER:
+			deal += (client->rangerWeapon * 3);
+			break;
+		case CLASS_WIZARD:
+			deal += (client->wizardWeapon * 3);
+			break;
+		case CLASS_WARRIOR:
+			deal += (client->warriorWeapon * 3);
+			break;
+		}
+	}
+
+	
+	switch (target)
+	{
+	case 1:
+		if (enemy->demonShroud1 && !smite)
+		{
+			enemy->demonShroud1 = false;
+			info = "The demons\'s shroud blocked the attack!";
+			infoSet = true;
+
+			guide = "Your attack did no damage!";
+			guideSet = true;
+			return;
+		}
+		else if (enemy->demonShroud1 && smite)
+		{
+			//damage
+			enemy->demonShroud1 = false;
+			enemy->enemy1Health = enemy->enemy1Health - deal;
+
+			//info card
+			info = "The demons\'s shroud was destroyed by your smite!";
+			infoSet = true;
+
+			//guide card
+			char* dealStr = malloc(2);
+			sprintf(dealStr, "%i", deal);
+			int dLen = strlen(dealStr);
+
+			char* begin = "Your smite dealt ";
+			int beginLen = strlen(begin);
+
+			char* end = " damage!";
+			int endLen = strlen(end);
+			guide = malloc(beginLen + dLen + endLen);
+
+			memcpy(guide, begin, beginLen);
+			memcpy(guide + beginLen, dealStr ,dLen);
+			memcpy(guide + beginLen + dLen, end ,endLen);
+			guideSet = true;
+		}
+
+		//normal attack
+		if (!enemy->demonShroud1 && smite)
+		{
+			enemy->enemy1Health = enemy->enemy1Health - deal;
+
+			info = "You used smite on an enemy!";
+			infoSet = true;
+
+			//guide card
+			char* dealStr = malloc(2);
+			sprintf(dealStr, "%i", deal);
+			int dLen = strlen(dealStr);
+
+			char* begin = "Your smite dealt ";
+			int beginLen = strlen(begin);
+
+			char* end = " damage!";
+			int endLen = strlen(end);
+			guide = malloc(beginLen + dLen + endLen);
+
+			memcpy(guide, begin, beginLen);
+			memcpy(guide + beginLen, dealStr, dLen);
+			memcpy(guide + beginLen + dLen, end, endLen);
+			guideSet = true;
+		}
+
+		//check if enemy dead, and shift enemies down if so
+		if (enemy->enemy1Health <= 0)
+		{
+			info = "You have defeated an enemy!";
+			infoSet = true;
+
+			numEnemies--;
+
+			//shift enemies down
+			enemy->enemy1Health = enemy->enemy2Health;
+			enemy->enemy1Type = enemy->enemy2Type;
+
+			enemy->enemy2Health = enemy->enemy3Health;
+			enemy->enemy2Type = enemy->enemy3Type;
+		}
+		break;
+	case 2:
+		//check if enemy dead, and shift enemies down if so
+		if (enemy->enemy2Health <= 0)
+		{
+			info = "You have defeated an enemy!";
+			infoSet = true;
+
+			numEnemies--;
+
+			//shift enemies down
+			enemy->enemy2Health = enemy->enemy3Health;
+			enemy->enemy2Type = enemy->enemy3Type;
+
+			enemy->enemy3Health = 0;
+			enemy->enemy3Type = MONSTER_NONE;
+		}
+		break;
+	case 3:
+		//check if enemy dead, and clear enemy 3
+		if (enemy->enemy3Health <= 0)
+		{
+			info = "You have defeated an enemy!";
+			infoSet = true;
+
+			numEnemies--;
+
+			//shift enemies down
+			enemy->enemy3Health = 0;
+			enemy->enemy3Type = MONSTER_NONE;
+
+		}
+		break;
+	}
+
+	smite = false;
+}
+
+//Monster attack damage calculation
+void MonsterAttack(edict_t* ent, int target, int damage)
+{
+	int deal = 0;
+	//range
+	deal = (int)(crandom() * 6);
+
+	//invert negatives
+	if (deal < 0)
+	{
+		deal = deal * -1;
+	}
+	//increase min values
+	deal += 5;
+	deal += damage;
+
+}
+
 void Cmd_WeaponPrices_f(edict_t* ent)
 {
 	gclient_t* client;
@@ -974,6 +1215,7 @@ void Cmd_ConsumablePrices_f(edict_t* ent)
 	}
 	gi.cprintf(ent, 1, "Consumables \nHealth Potion\t15g\nMagic Potion\t20g\nBomb\t5 Gunpowder\n");
 }
+
 void Cmd_Resources_f(edict_t* ent)
 {
 	gclient_t* client;
@@ -1052,9 +1294,15 @@ void Cmd_UseSkill_f(edict_t* ent)
 						client->warriorDead = false;
 						client->warriorHealth = 40;
 					}
+
+					//cost
 					client->heroMP = client->heroMP - 40;
+
+					//update screen
 					gi.cprintf(ent, 1, "You revived your party!\n");
 					CombatScreen(ent);
+
+					//next teammate will always be alive so we don't have to check
 					if(client->inCombat)
 					{
 					partyIndex++;
@@ -1064,6 +1312,7 @@ void Cmd_UseSkill_f(edict_t* ent)
 				else
 				{
 					gi.cprintf(ent, 1, "You don\'t have enough MP!\n");
+					return;
 				}
 			}
 		}
@@ -1115,37 +1364,129 @@ void Cmd_UseSkill_f(edict_t* ent)
 
 					//find next turn
 					partyIndex++;
-					switch (partyIndex)
-					{
-					case CLASS_RANGER:
-						if (client->rangerDead)
-						{
-							partyIndex++;
-						}
-					case CLASS_WIZARD:
-						if (client->wizardDead)
-						{
-							partyIndex++;
-						}
-					case CLASS_WARRIOR:
-						if (client->warriorDead)
-						{
-							client->turn = false;
-							partyIndex = 1;
-						}
-					}
+					PartyNextTurn(ent);
 
 					//update screen
 					CombatScreen(ent);
+					return;
 				}
 				else
 				{
-					gi.centerprintf(ent, 1, "You don\'t have enough MP!\n");
+					gi.cprintf(ent, 1, "You don\'t have enough MP!\n");
+					return;
+				}
+			}
+			//if there is only one enemy
+			if (Q_stricmp(gi.argv(2), "smite") == 0)
+			{
+				//check if call was correct
+				if (numEnemies > 1)
+				{
+					gi.cprintf(ent, 1, "Specify your target!\n");
+				}
+				else if (numEnemies == 1)
+				{
+					//check for MP, if high enough, do the skill
+					if (client->heroMP >= 20)
+					{
+						//do the skill
+						smite = true;
+						PartyAttack(ent, 1, 10, true, true);
+						
+						//take the MP
+						client->heroMP = client->heroMP - 20;
+
+						//find next turn
+						partyIndex++;
+						PartyNextTurn(ent);
+
+						//update screen
+						CombatScreen(ent);
+
+					}
+					else
+					{
+						gi.cprintf(ent, 1, "You don\'t have enough MP!\n");
+					}
 				}
 			}
 		}
 		if (gi.argc() == 4)
 		{
+			gi.cprintf(ent, 1, "Got to argc 4\n");
+			if (Q_stricmp(gi.argv(2), "smite") == 0)
+			{
+				int target = 0;
+
+				//find out who the target of the attack is
+				switch (numEnemies)
+				{
+				case 1:
+					target = 1;
+					break;
+				case 2:
+					if (Q_stricmp(gi.argv(3), "left") == 0)
+					{
+						target = 1;
+						break;
+					}
+					if (Q_stricmp(gi.argv(3), "right") == 0)
+					{
+						target = 2;
+						break;
+					}
+					
+					//invalid arg
+					if (target == 0)
+					{
+						gi.cprintf(ent, 1, "You did not enter a valid target!\n");
+						return;
+					}
+					break;
+				case 3:
+					if (Q_stricmp(gi.argv(3), "left") == 0)
+					{
+						target = 1;
+						break;
+					}
+					if (Q_stricmp(gi.argv(2), "center") == 0)
+					{
+						target = 2;
+						break;
+					}
+					if (Q_stricmp(gi.argv(3), "right") == 0)
+					{
+						target = 3;
+						break;
+					}
+
+					if (target == 0)
+					{
+						gi.cprintf(ent, 1, "You did not enter a valid target!\n");
+						return;
+					}
+					break;
+				}
+
+				//do the skill
+				smite = true;
+
+				if (target != 0)
+				{
+					PartyAttack(ent, target, 10, true, true);
+					client->heroMP = client->heroMP - 20;
+				}
+				else
+				{
+					gi.cprintf(ent, 1, "Something went wrong!\n");
+					return;
+				}
+
+				partyIndex++;
+				PartyNextTurn(ent);
+
+				CombatScreen(ent);
+			}
 			return;
 		}
 	}
@@ -1154,7 +1495,7 @@ void Cmd_UseSkill_f(edict_t* ent)
 //lists skills that characters can use
 void Cmd_Skills_f(edict_t* ent)
 {
-	char* hero = "Hero Skills:\nHope --- Revives Fallen Allies \tCost:40\nHolyShield --- Temp Health for Allies \tCost:30\nSmite --- Powerful Attack, Ignores Shrouds \tCost:15\n";
+	char* hero = "Hero Skills:\nHope --- Revives Fallen Allies \tCost:40\nHolyShield --- Temp Health for Allies \tCost:30\nSmite --- Powerful Attack, Ignores Shrouds \tCost:20\n";
 	char* ranger = "Ranger Skills:\nArrowRain --- Strikes All \tCost:25\nHeartpiercer --- Powerful Attack, Extremely Effective Against Armor \tCost:30\n";
 	char* wizard = "Wizard Skills:\nFireBall --- Strikes All, Powerful Against Weaker Enemies \tCost:35\nFrailtyCurse --- Reduces Damage of an Enemy\'s Attack \tCost:20\nLightning --- Severely Damage An Enemy \tCost:40\n";
 	char* warrior = "Warrior Skills:\nTaunt --- All Enemies Attack You Next Turn \tCost:35\nShieldBash --- Stronger Attack, Increased Defense for two Turns \tCost:25";
@@ -1940,6 +2281,11 @@ void Cmd_CleanValues_f(edict_t* ent)
 	{
 		return;
 	}
+	client->heroTempHealth = 0;
+	client->rangerTempHealth = 0;
+	client->wizardTempHealth = 0;
+	client->warriorTempHealth = 0;
+	client->heroBuffer = false;
 
 	edict_t* enemy;
 	enemy = client->enemy;
@@ -1950,23 +2296,14 @@ void Cmd_CleanValues_f(edict_t* ent)
 	enemy->enemy2Type = 0;
 	enemy->enemy3Health = 0;
 	enemy->enemy3Type = 0;
+	enemy->demonShroud1 = false;
+	enemy->demonShroud2 = false;
+	enemy->demonShroud3 = false;
 
 	client->enemy = NULL;
 
 	partyIndex = 1;
 	monsterIndex = 1;
-}
-
-//Party member attack damage calculation
-int PartyAttack(edict_t* ent, int target, int damage)
-{
-	return 0;
-}
-
-//Monster attack damage calculation
-int MonsterAttack(edict_t* ent, int target, int damage)
-{
-	return 0;
 }
 
 //main combat function
@@ -2394,7 +2731,7 @@ void Cmd_Roll_f(edict_t* ent)
 	for (i = 0; i < 5; i++)
 	{
 		//range
-		random = (int)(crandom() * 5);
+		random = (int)(crandom() * 6);
 
 		//invert negatives
 		if (random < 0)
@@ -2404,41 +2741,18 @@ void Cmd_Roll_f(edict_t* ent)
 
 
 		//increase min values
-		random += 3;
-		if (random == 4)
-		{
-			random = 3;
-		}
-		if (random == 5 || random == 6)
-		{
-			random = 4;
-		}
-		if (random == 7)
-		{
-			random = 5;
-		}
+		random += 5;
+		
 		//repeat unitl non zero answer
-		while (random == 0)
+		/*while (random == 0)
 		{
-			random = (int)(crandom() * 5);
+			random = (int)(crandom() * 6);
 			if (random < 0)
 			{
 				random = random * -1;
 			}
-			random += 3;
-			if (random == 4)
-			{
-				random = 3;
-			}
-			if (random == 5 || random == 6)
-			{
-				random = 4;
-			}
-			if (random == 7)
-			{
-				random = 5;
-			}
-		}
+			random += 5;
+		}*/
 		gi.cprintf(ent, 1, "random int: %d\n", random);
 	}
 }
@@ -2446,7 +2760,10 @@ void Cmd_Roll_f(edict_t* ent)
 qboolean test;
 void Cmd_Test_f (edict_t* ent)
 {
-	test = true;
+	int number = 46;
+	guide = malloc(50);
+	sprintf(guide, "%i", number);
+	guideSet = true;
 	CombatScreen(ent);
 }
 /*
@@ -2463,7 +2780,7 @@ void ClientCommand (edict_t *ent)
 
 	cmd = gi.argv(0);
 
-	/*if (Q_stricmp(cmd, "players") == 0)
+	if (Q_stricmp(cmd, "players") == 0)
 	{
 		Cmd_Players_f (ent);
 		return;
@@ -2482,7 +2799,7 @@ void ClientCommand (edict_t *ent)
 	{
 		Cmd_Score_f (ent);
 		return;
-	}*/
+	}
 	if (Q_stricmp (cmd, "help") == 0)
 	{
 		Cmd_Help_f (ent);
@@ -2545,7 +2862,7 @@ void ClientCommand (edict_t *ent)
 		Cmd_Run_f(ent);
 		return;
 	}
-	/*if (Q_stricmp(cmd, "roll") == 0)
+	if (Q_stricmp(cmd, "roll") == 0)
 	{
 		Cmd_Roll_f(ent);
 		return;
@@ -2554,7 +2871,7 @@ void ClientCommand (edict_t *ent)
 	{
 		Cmd_Test_f(ent);
 		return;
-	}*/
+	}
 	if (Q_stricmp(cmd, "skills") == 0)
 	{
 		Cmd_Skills_f(ent);

@@ -1172,14 +1172,17 @@ struct edict_s
 	int			enemy1Type;
 	int			enemy1Health;
 	qboolean	demonShroud1;
+	qboolean	enemy1Weak;
 
 	int			enemy2Type;
 	int			enemy2Health;
 	qboolean	demonShroud2;
+	qboolean	enemy2Weak;
 
 	int			enemy3Type;
 	int			enemy3Health;
 	qboolean	demonShroud3;
+	qboolean	enemy3Weak;
 };
 
 //RPG mod armor types
