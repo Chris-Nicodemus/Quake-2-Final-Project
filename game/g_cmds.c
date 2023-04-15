@@ -939,8 +939,11 @@ extern qboolean infoSet;
 extern char* guide;
 extern qboolean guideSet;
 
+//hero stuff
 qboolean smite;
 qboolean buffer;
+
+//warrior stuff
 int shieldBash = 0;
 
 extern int numEnemies;
@@ -1250,6 +1253,7 @@ void Cmd_Stats_f(edict_t* ent)
 //Use a skill
 void Cmd_UseSkill_f(edict_t* ent)
 {
+	int i;
 	gclient_t* client;
 	if (ent->client)
 	{
@@ -1325,29 +1329,31 @@ void Cmd_UseSkill_f(edict_t* ent)
 	{
 		return;
 	}
+
+	//most skills cannot be used when not in combat, not your turn, and not on the character's initiative
+	if (!client->inCombat)
+	{
+		gi.cprintf(ent, 1, "Skill can only be used in battle!\n");
+		return;
+	}
+	if (!client->turn)
+	{
+		gi.cprintf(ent, 1, "It is not your turn yet!\n");
+		return;
+	}
+
 	//hero skills
 	if (Q_stricmp(gi.argv(1), "hero") == 0)
 	{
+		//most skills cannot be used when not in combat, not your turn, and not on the character's initiative
+		if (!(partyIndex == 1))
+		{
+			gi.cprintf(ent, 1, "It is not the hero\'s turn!\n");
+			return;
+		}
 		//contains all 2 argument skills
 		if (gi.argc() == 3)
 		{	
-			//most skills cannot be used when not in combat, not your turn, and not on the character's initiative
-			if (!client->inCombat)
-			{
-				gi.cprintf(ent, 1, "Skill can only be used in battle!\n");
-				return;
-			}
-			if (!client->turn)
-			{
-				gi.cprintf(ent, 1, "It is not your turn yet!\n");
-				return;
-			}
-			if (!(partyIndex == 1))
-			{
-				gi.cprintf(ent, 1, "It is not the hero\'s turn!\n");
-				return;
-			}
-
 			if (Q_stricmp(gi.argv(2), "holyshield") == 0)
 			{
 				if (client->heroMP >= 30)
@@ -1407,6 +1413,7 @@ void Cmd_UseSkill_f(edict_t* ent)
 					else
 					{
 						gi.cprintf(ent, 1, "You don\'t have enough MP!\n");
+						return;
 					}
 				}
 			}
@@ -1416,78 +1423,141 @@ void Cmd_UseSkill_f(edict_t* ent)
 			gi.cprintf(ent, 1, "Got to argc 4\n");
 			if (Q_stricmp(gi.argv(2), "smite") == 0)
 			{
-				int target = 0;
 
-				//find out who the target of the attack is
-				switch (numEnemies)
+				//check for mana
+				if (client->heroMP >= 20)
 				{
-				case 1:
-					target = 1;
-					break;
-				case 2:
-					if (Q_stricmp(gi.argv(3), "left") == 0)
+					int target = 0;
+
+					//find out who the target of the attack is
+					switch (numEnemies)
 					{
+					case 1:
 						target = 1;
 						break;
-					}
-					if (Q_stricmp(gi.argv(3), "right") == 0)
-					{
-						target = 2;
+					case 2:
+						if (Q_stricmp(gi.argv(3), "left") == 0)
+						{
+							target = 1;
+							break;
+						}
+						if (Q_stricmp(gi.argv(3), "right") == 0)
+						{
+							target = 2;
+							break;
+						}
+
+						//invalid arg
+						if (target == 0)
+						{
+							gi.cprintf(ent, 1, "You did not enter a valid target!\n");
+							return;
+						}
+						break;
+					case 3:
+						if (Q_stricmp(gi.argv(3), "left") == 0)
+						{
+							target = 1;
+							break;
+						}
+						if (Q_stricmp(gi.argv(2), "center") == 0)
+						{
+							target = 2;
+							break;
+						}
+						if (Q_stricmp(gi.argv(3), "right") == 0)
+						{
+							target = 3;
+							break;
+						}
+
+						//invalid arg
+						if (target == 0)
+						{
+							gi.cprintf(ent, 1, "You did not enter a valid target!\n");
+							return;
+						}
 						break;
 					}
-					
-					//invalid arg
-					if (target == 0)
+
+					//do the skill
+					smite = true;
+
+					if (target != 0)
 					{
-						gi.cprintf(ent, 1, "You did not enter a valid target!\n");
+						PartyAttack(ent, target, 10, true, true);
+						client->heroMP = client->heroMP - 20;
+					}
+					else
+					{
+						gi.cprintf(ent, 1, "Something went wrong!\n");
 						return;
 					}
-					break;
-				case 3:
-					if (Q_stricmp(gi.argv(3), "left") == 0)
-					{
-						target = 1;
-						break;
-					}
-					if (Q_stricmp(gi.argv(2), "center") == 0)
-					{
-						target = 2;
-						break;
-					}
-					if (Q_stricmp(gi.argv(3), "right") == 0)
-					{
-						target = 3;
-						break;
-					}
 
-					if (target == 0)
-					{
-						gi.cprintf(ent, 1, "You did not enter a valid target!\n");
-						return;
-					}
-					break;
+					partyIndex++;
+					PartyNextTurn(ent);
+
+					CombatScreen(ent);
 				}
-
-				//do the skill
-				smite = true;
-
-				if (target != 0)
-				{
-					PartyAttack(ent, target, 10, true, true);
-					client->heroMP = client->heroMP - 20;
-				}
+				//don't have enough mana
 				else
 				{
-					gi.cprintf(ent, 1, "Something went wrong!\n");
+					gi.cprintf(ent, 1, "You don\'t have enough MP!\n");
 					return;
 				}
-
-				partyIndex++;
-				PartyNextTurn(ent);
-
-				CombatScreen(ent);
 			}
 			return;
+		}
+	}
+	
+	//ranger skills
+	if (Q_stricmp(gi.argv(1), "ranger") == 0)
+	{
+		//turn exclusion
+		if (!(partyIndex == 2))
+		{
+			gi.cprintf(ent, 1, "It is not the ranger\'s turn!\n");
+			return;
+		}
+
+		//now check for arrowrain skill or single target heartpiercer
+		if (gi.argc() == 3)
+		{
+			//arrow rain
+			if (Q_stricmp(gi.argv(2), "arrowrain") == 0)
+			{
+				//check for mana
+				if (client->rangerMP >= 25)
+				{
+					//do skill: attack all living enemies
+					if (enemy->enemy1Type != MONSTER_NONE)
+					{
+						PartyAttack(ent, 1, 5, true, true);
+					}
+
+					if (enemy->enemy2Type != MONSTER_NONE)
+					{
+						PartyAttack(ent, 1, 5, true, true);
+					}
+
+					if (enemy->enemy3Type != MONSTER_NONE)
+					{
+						PartyAttack(ent, 1, 5, true, true);
+					}
+
+					//say what happened
+					guide = "You attacked all enemies!";
+					guideSet = true;
+
+					//get next turn
+					partyIndex++;
+					PartyNextTurn(ent);
+
+					//show stuff on screen
+					CombatScreen(ent);
+				}
+			}
+			
 		}
 	}
 }
