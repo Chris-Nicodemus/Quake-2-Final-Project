@@ -1420,7 +1420,7 @@ void Cmd_UseSkill_f(edict_t* ent)
 		}
 		if (gi.argc() == 4)
 		{
-			gi.cprintf(ent, 1, "Got to argc 4\n");
+			//gi.cprintf(ent, 1, "Got to argc 4\n");
 			if (Q_stricmp(gi.argv(2), "smite") == 0)
 			{
 
@@ -1513,10 +1513,16 @@ void Cmd_UseSkill_f(edict_t* ent)
 	//ranger skills
 	if (Q_stricmp(gi.argv(1), "ranger") == 0)
 	{
-		//turn exclusion
+		//turn and dead exclusions
 		if (!(partyIndex == 2))
 		{
 			gi.cprintf(ent, 1, "It is not the ranger\'s turn!\n");
+			return;
+		}
+
+		if (client->rangerDead)
+		{
+			gi.cprintf(ent, 1, "The ranger is dead!\n");
 			return;
 		}
 
@@ -1526,7 +1532,7 @@ void Cmd_UseSkill_f(edict_t* ent)
 			//arrow rain
 			if (Q_stricmp(gi.argv(2), "arrowrain") == 0)
 			{
-				//check for mana
+				//check for MP
 				if (client->rangerMP >= 25)
 				{
 					//do skill: attack all living enemies
@@ -1549,6 +1555,9 @@ void Cmd_UseSkill_f(edict_t* ent)
 					guide = "You attacked all enemies!";
 					guideSet = true;
 
+					//MP cost
+					client->rangerMP = client->rangerMP - 25;
+
 					//get next turn
 					partyIndex++;
 					PartyNextTurn(ent);
@@ -1557,7 +1566,161 @@ void Cmd_UseSkill_f(edict_t* ent)
 					CombatScreen(ent);
 				}
 			}
-			
+
+			//if there is only one enemy
+			if (Q_stricmp(gi.argv(2), "heartpirecer") == 0)
+			{
+				//check if call was correct
+				if (numEnemies > 1)
+				{
+					gi.cprintf(ent, 1, "Specify your target!\n");
+				}
+				else if (numEnemies == 1)
+				{
+					//check for MP, if high enough, do the skill
+					if (client->rangerMP >= 30)
+					{
+						//bonus for skill
+						int damage = 10;
+
+						//increase bonus damage against drakes and dragons
+						if (enemy->enemy1Type == MONSTER_DRAKE || enemy->enemy1Type == MONSTER_DRAGON)
+						{
+							damage += 15;
+						}
+						//do the skill
+						PartyAttack(ent, 1, damage, true, true);
+
+						//take the MP
+						client->rangerMP = client->rangerMP - 30;
+
+						//find next turn
+						partyIndex++;
+						PartyNextTurn(ent);
+
+						//update screen
+						CombatScreen(ent);
+
+					}
+					else
+					{
+						gi.cprintf(ent, 1, "You don\'t have enough MP!\n");
+						return;
+					}
+				}
+			}
+			return;
+		}
+		//multiple possible targets for heatpiercer
+		if (gi.argc() == 4)
+		{
+			//gi.cprintf(ent, 1, "Got to argc 4\n");
+			if (Q_stricmp(gi.argv(2), "heartpiercer") == 0)
+			{
+
+				//check for mana
+				if (client->rangerMP >= 30)
+				{
+					int target = 0;
+					int damage = 10;
+					//find out who the target of the attack is, then calculate bonus
+					switch (numEnemies)
+					{
+					case 1:
+						target = 1;
+						break;
+					case 2:
+						if (Q_stricmp(gi.argv(3), "left") == 0)
+						{
+							target = 1;
+							break;
+						}
+						if (Q_stricmp(gi.argv(3), "right") == 0)
+						{
+							target = 2;
+							break;
+						}
+
+						//invalid arg
+						if (target == 0)
+						{
+							gi.cprintf(ent, 1, "You did not enter a valid target!\n");
+							return;
+						}
+						break;
+					case 3:
+						if (Q_stricmp(gi.argv(3), "left") == 0)
+						{
+							target = 1;
+							break;
+						}
+						if (Q_stricmp(gi.argv(2), "center") == 0)
+						{
+							target = 2;
+							break;
+						}
+						if (Q_stricmp(gi.argv(3), "right") == 0)
+						{
+							target = 3;
+							break;
+						}
+
+						//invalid arg
+						if (target == 0)
+						{
+							gi.cprintf(ent, 1, "You did not enter a valid target!\n");
+							return;
+						}
+						break;
+					}
+
+					//do the skill
+					if (target != 0)
+					{
+						switch (target)
+						{
+						case 1:
+							if (enemy->enemy1Type == MONSTER_DRAKE || enemy->enemy1Type == MONSTER_DRAGON)
+							{
+								damage += 15;
+							}
+							break;
+						case 2:
+							if (enemy->enemy2Type == MONSTER_DRAKE || enemy->enemy2Type == MONSTER_DRAGON)
+							{
+								damage += 15;
+							}
+							break;
+						case 3:
+							if (enemy->enemy3Type == MONSTER_DRAKE || enemy->enemy3Type == MONSTER_DRAGON)
+							{
+								damage += 15;
+							}
+							break;
+						}
+
+						PartyAttack(ent, target, damage, true, true);
+						client->rangerMP = client->rangerMP - 30;
+					}
+					else
+					{
+						gi.cprintf(ent, 1, "Something went wrong!\n");
+						return;
+					}
+
+					partyIndex++;
+					PartyNextTurn(ent);
+
+					CombatScreen(ent);
+				}
+				//don't have enough mana
+				else
+				{
+					gi.cprintf(ent, 1, "You don\'t have enough MP!\n");
+					return;
+				}
+			}
+			return;
 		}
 	}
 }

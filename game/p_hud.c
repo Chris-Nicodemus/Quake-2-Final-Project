@@ -409,9 +409,9 @@ void CombatScreen(edict_t* ent)
 		{
 			Cmd_CombatWon_f(ent);
 			//ripped from killed function in g_combat.c
-			enemy->touch = NULL;
+			/*enemy->touch = NULL;
 			monster_death_use(enemy);
-			enemy->die(enemy, ent, ent, 0, NULL);
+			enemy->die(enemy, ent, ent, 0, NULL);*/
 			guide = "You have won!";
 			Cmd_CleanValues_f(ent);
 		}
