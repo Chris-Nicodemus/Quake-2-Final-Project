@@ -979,6 +979,10 @@ void PartyNextTurn(edict_t* ent)
 			client->turn = false;
 			partyIndex = 1;
 		}
+		break;
+	case 5:
+		client->turn = false;
+		partyIndex = 1;
 	}
 }
 
@@ -2056,9 +2060,11 @@ void Cmd_UseSkill_f(edict_t* ent)
 						PartyNextTurn(ent);
 
 						//gi.cprintf(ent, 1, "Got to info set\n");
-						info = "You used a curse of frailty on an enemy!";
-						infoSet = true;
-						
+						if (!(Q_stricmp(info, "You have defeated an enemy!") == 0))
+						{
+							info = "You used a curse of frailty on an enemy!";
+							infoSet = true;
+						}
 						//update screen
 						CombatScreen(ent);
 
@@ -2097,8 +2103,11 @@ void Cmd_UseSkill_f(edict_t* ent)
 						PartyNextTurn(ent);
 
 						//gi.cprintf(ent, 1, "Got to info set\n");
-						info = "You struck an enemy with lightning!";
-						infoSet = true;
+						if (!(Q_stricmp(info, "You have defeated an enemy!") == 0))
+						{
+							info = "You struck an enemy with lightning!";
+							infoSet = true;
+						}
 
 						//update screen
 						CombatScreen(ent);
@@ -2189,8 +2198,11 @@ void Cmd_UseSkill_f(edict_t* ent)
 
 						client->wizardMP = client->wizardMP - 25;
 
-						info = "You used a curse of frailty on an enemy!";
-						infoSet = true;
+						if (!(Q_stricmp(info, "You have defeated an enemy!") == 0))
+						{
+							info = "You used a curse of frailty on an enemy!";
+							infoSet = true;
+						}
 
 						partyIndex++;
 						PartyNextTurn(ent);
@@ -2278,8 +2290,11 @@ void Cmd_UseSkill_f(edict_t* ent)
 
 						client->wizardMP = client->wizardMP - 40;
 
-						info = "You struck an enemy with lightning!";
-						infoSet = true;
+						if (!(Q_stricmp(info, "You have defeated an enemy!") == 0))
+						{
+							info = "You struck an enemy with lightning!";
+							infoSet = true;
+						}
 
 						partyIndex++;
 						PartyNextTurn(ent);
@@ -2300,6 +2315,193 @@ void Cmd_UseSkill_f(edict_t* ent)
 				}
 			}
 			return;
+		}
+	}
+
+	//warrior skills
+	if (Q_stricmp(gi.argv(1), "warrior") == 0)
+	{
+		//turn and dead exclusions
+		if (!(partyIndex == 4))
+		{
+			gi.cprintf(ent, 1, "It is not the warrior\'s turn!\n");
+			return;
+		}
+
+		if (client->warriorDead)
+		{
+			gi.cprintf(ent, 1, "The warrior is dead!\n");
+			return;
+		}
+
+		//taunt and shield bash for one enemy
+		if (gi.argc() == 3)
+		{
+			if(Q_stricmp(gi.argv(2), "taunt") == 0)
+			{
+				if (client->warriorMP >= 35)
+				{
+					client->warriorTaunt = true;
+
+					client->warriorMP = client->warriorMP - 35;
+
+					info = "You have activated taunt!";
+					infoSet = true;
+
+					guide = "All enemies will target the warrior on their next turn!";
+					guideSet = true;
+
+					partyIndex++;
+					PartyNextTurn(ent);
+
+					CombatScreen(ent);
+				}
+				else
+				{
+					gi.cprintf(ent, 1, "You don\'t have enough MP!\n");
+				}
+			}
+
+			if (Q_stricmp(gi.argv(2), "shieldbash") == 0)
+			{
+				//check if call was correct
+				if (numEnemies > 1)
+				{
+					gi.cprintf(ent, 1, "Specify your target!\n");
+				}
+				else if (numEnemies == 1)
+				{
+					//check for MP, if high enough, do the skill
+					if (client->warriorMP >= 25)
+					{
+						//bonus for skill
+						shieldBash = 2;
+
+						//do the skill
+						PartyAttack(ent, 1, 10, true, true);
+
+						//take the MP
+						client->warriorMP = client->warriorMP - 25;
+
+						//find next turn
+						partyIndex++;
+						PartyNextTurn(ent);
+
+						//gi.cprintf(ent, 1, "Got to info set\n");
+						if (!(Q_stricmp(info, "You have defeated an enemy!") == 0))
+						{
+							info = "You struck an enemy with your shield!";
+							infoSet = true;
+						}
+
+						//update screen
+						CombatScreen(ent);
+
+					}
+					else
+					{
+						gi.cprintf(ent, 1, "You don\'t have enough MP!\n");
+						return;
+					}
+				}
+			}
+			return;
+		}
+
+		if (gi.argc() == 4)
+		{
+			if (Q_stricmp(gi.argv(2), "shieldbash") == 0)
+			{
+
+				//check for mana
+				if (client->warriorMP >= 25)
+				{
+					int target = 0;
+					//find out who the target of the attack is, then apply weakness
+					switch (numEnemies)
+					{
+					case 1:
+						target = 1;
+						break;
+					case 2:
+						if (Q_stricmp(gi.argv(3), "left") == 0)
+						{
+							target = 1;
+							break;
+						}
+						if (Q_stricmp(gi.argv(3), "right") == 0)
+						{
+							target = 2;
+							break;
+						}
+
+						//invalid arg
+						if (target == 0)
+						{
+							gi.cprintf(ent, 1, "You did not enter a valid target!\n");
+							return;
+						}
+						break;
+					case 3:
+						if (Q_stricmp(gi.argv(3), "left") == 0)
+						{
+							target = 1;
+							break;
+						}
+						if (Q_stricmp(gi.argv(3), "center") == 0)
+						{
+							target = 2;
+							break;
+						}
+						if (Q_stricmp(gi.argv(3), "right") == 0)
+						{
+							target = 3;
+							break;
+						}
+
+						//invalid arg
+						if (target == 0)
+						{
+							gi.cprintf(ent, 1, "You did not enter a valid target!\n");
+							return;
+						}
+						break;
+					}
+
+					//do the skill if target is working
+					if (target != 0)
+					{
+
+						PartyAttack(ent, 1, 10, true, true);
+
+						client->warriorMP = client->warriorMP - 25;
+
+						shieldBash = 2;
+
+						if (!(Q_stricmp(info, "You have defeated an enemy!") == 0))
+						{
+							info = "You struck an enemy with your shield!";
+							infoSet = true;
+						}
+
+						partyIndex++;
+						PartyNextTurn(ent);
+
+						CombatScreen(ent);
+					}
+					else
+					{
+						gi.cprintf(ent, 1, "Something went wrong!\n");
+						return;
+					}
+				}
+				//don't have enough mana
+				else
+				{
+					gi.cprintf(ent, 1, "You don\'t have enough MP!\n");
+					return;
+				}
+			}
 		}
 	}
 }
