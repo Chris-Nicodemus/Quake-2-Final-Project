@@ -2639,6 +2639,426 @@ void Cmd_Attack_f(edict_t* ent)
 	}
 }
 
+//use items in or out of combat
+void Cmd_UseItem_f(edict_t* ent)
+{
+	gclient_t* client = ent->client;
+	if (!client)
+	{
+		return;
+	}
+
+	if (!client->inCombat)
+	{
+		//in combat, you do not specify who gets the item because it will automatically go to whoever's turn it is
+		if (gi.argc() == 2)
+		{
+			if (Q_stricmp(gi.argv(1), "bomb") == 0)
+			{
+				gi.cprintf(ent, 1, "Bommbs can only be used in combat!\n");
+				return;
+			}
+
+			gi.cprintf(ent, 1, "Please specify which party member you'd like to use an item on!\n");
+			return;
+		}
+
+		//out of combat, you must specify who gets the item
+		if (gi.argc() == 3)
+		{
+			//health potion
+			if (Q_stricmp(gi.argv(1), "potion") == 0)
+			{
+				int heal = 40;
+				if (client->potions <= 0)
+				{
+					gi.cprintf(ent, 1, "You do not have any potions!\n");
+					return;
+				}
+
+				if (Q_stricmp(gi.argv(2), "hero") == 0)
+				{
+					ent->health += heal;
+					if (ent->health > 100)
+					{
+						ent->health = 100;
+					}
+
+					gi.cprintf(ent, 1, "The hero now has %d health!\n", ent->health);
+
+					client->potions = client->potions - 1;
+					return;
+				}
+
+				if (Q_stricmp(gi.argv(2), "ranger") == 0)
+				{
+					client->rangerHealth += heal;
+					if (client->rangerHealth > 100)
+					{
+						client->rangerHealth = 100;
+					}
+
+					client->rangerDead = false;
+
+					gi.cprintf(ent, 1, "The ranger now has %d health!\n", client->rangerHealth);
+
+					client->potions = client->potions - 1;
+					return;
+				}
+
+				if (Q_stricmp(gi.argv(2), "wizard") == 0)
+				{
+					client->wizardHealth += heal;
+					if (client->wizardHealth > 100)
+					{
+						client->wizardHealth = 100;
+					}
+
+					client->wizardDead = false;
+
+					gi.cprintf(ent, 1, "The wizard now has %d health!\n", client->wizardHealth);
+
+					client->potions = client->potions - 1;
+					return;
+				}
+
+				if (Q_stricmp(gi.argv(2), "warrior") == 0)
+				{
+					client->warriorHealth += heal;
+					if (client->warriorHealth > 100)
+					{
+						client->warriorHealth = 100;
+					}
+
+					client->warriorDead = false;
+
+					gi.cprintf(ent, 1, "The warrior now has %d health!\n", client->warriorHealth);
+
+					client->potions = client->potions - 1;
+					return;
+				}
+			}
+		}
+
+		//magic potion
+		if (Q_stricmp(gi.argv(1), "magicpotion") == 0)
+		{
+			int mp = 40;
+			if (client->magicPotions <= 0)
+			{
+				gi.cprintf(ent, 1, "You do not have any magic potions!\n");
+				return;
+			}
+
+			if (Q_stricmp(gi.argv(2), "hero") == 0)
+			{
+				client->heroMP += mp;
+				if (client->heroMP > 100)
+				{
+					client->heroMP = 100;
+				}
+
+				gi.cprintf(ent, 1, "The hero now has %d MP!\n", client->heroMP);
+
+				client->magicPotions = client->magicPotions - 1;
+				return;
+			}
+
+			if (Q_stricmp(gi.argv(2), "ranger") == 0)
+			{
+				client->rangerMP += mp;
+				if (client->rangerMP > 100)
+				{
+					client->rangerMP = 100;
+				}
+
+				gi.cprintf(ent, 1, "The ranger now has %d MP!\n", client->rangerMP);
+
+				client->magicPotions = client->magicPotions - 1;
+				return;
+			}
+
+			if (Q_stricmp(gi.argv(2), "wizard") == 0)
+			{
+				client->wizardMP += mp;
+				if (client->wizardMP > 100)
+				{
+					client->wizardMP = 100;
+				}
+
+				gi.cprintf(ent, 1, "The wizard now has %d MP!\n", client->wizardMP);
+
+				client->magicPotions = client->magicPotions - 1;
+				return;
+			}
+
+			if (Q_stricmp(gi.argv(2), "warrior") == 0)
+			{
+				client->warriorMP += mp;
+				if (client->warriorMP > 100)
+				{
+					client->warriorMP = 100;
+				}
+
+				gi.cprintf(ent, 1, "The warrior now has %d MP!\n", client->warriorMP);
+
+				client->magicPotions = client->magicPotions - 1;
+				return;
+			}
+		}
+	}
+	//in combat
+	else
+	{
+		//turn exclusion
+		if (!client->turn)
+		{
+			gi.cprintf(ent, 1, "You can only use items on your turn!\n");
+			return;
+		}
+
+		if (gi.argc() == 2)
+		{
+			if (Q_stricmp(gi.argv(1), "potion") == 0)
+			{
+				if (client->potions <= 0)
+				{
+					gi.cprintf(ent, 1, "You do not have any potions!\n");
+					return;
+				}
+
+				//apply effects
+				int heal = 40;
+				char* health;
+				char* begin;
+				char* end;
+
+				int healthlen;
+				int beginlen;
+				int endlen;
+				switch (partyIndex)
+				{
+				case CLASS_HERO:
+					ent->health += heal;
+					if (ent->health > 100)
+					{
+						ent->health = 100;
+					}
+
+					//next turn
+					partyIndex++;
+					PartyNextTurn(ent);
+
+					//get screen set up
+					if (ent->health == 100)
+					{
+						health = malloc(3);
+					}
+					if (ent->health < 100 && ent->health > 9)
+					{
+						health = malloc(2);
+					}
+					if (ent->health < 10)
+					{
+						health = malloc(1);
+					}
+					sprintf(health, "%d", ent->health);
+
+					healthlen = strlen(health);
+					begin = "The hero now has ";
+					beginlen = strlen(begin);
+					end = " health!";
+					endlen = strlen(end);
+
+					guide = malloc(healthlen + beginlen + endlen);
+					memcpy(guide, begin, beginlen);
+					memcpy(guide + beginlen, health, healthlen);
+					memcpy(guide + beginlen + healthlen, end, endlen);
+					guideSet = true;
+
+					info = "The hero used a health potion!";
+					infoSet = true;
+
+					CombatScreen(ent);
+					//gi.cprintf(ent, 1, "The hero now has %d health!\n", ent->health);
+
+					client->potions = client->potions - 1;
+					return;
+					break;
+				case CLASS_RANGER:
+					client->rangerHealth += heal;
+					if (client->rangerHealth > 100)
+					{
+						client->rangerHealth = 100;
+					}
+
+					client->rangerDead = false;
+
+					//gi.cprintf(ent, 1, "The ranger now has %d health!\n", client->rangerHealth);
+					//next turn
+					partyIndex++;
+					PartyNextTurn(ent);
+
+					//get screen set up
+					if (client->rangerHealth == 100)
+					{
+						health = malloc(3);
+					}
+					if (client->rangerHealth < 100 && client->rangerHealth > 9)
+					{
+						health = malloc(2);
+					}
+					if (client->rangerHealth < 10)
+					{
+						health = malloc(1);
+					}
+					sprintf(health, "%d", client->rangerHealth);
+
+					healthlen = strlen(health);
+					begin = "The ranger now has ";
+					beginlen = strlen(begin);
+					end = " health!";
+					endlen = strlen(end);
+
+					guide = malloc(healthlen + beginlen + endlen);
+					memcpy(guide, begin, beginlen);
+					memcpy(guide + beginlen, health, healthlen);
+					memcpy(guide + beginlen + healthlen, end, endlen);
+					guideSet = true;
+
+					info = "The ranger used a health potion!";
+					infoSet = true;
+
+					CombatScreen(ent);
+
+					client->potions = client->potions - 1;
+					return;
+					break;
+				case CLASS_WIZARD:
+					client->wizardHealth += heal;
+					if (client->wizardHealth > 100)
+					{
+						client->wizardHealth = 100;
+					}
+
+					client->wizardDead = false;
+
+					//gi.cprintf(ent, 1, "The wizard now has %d health!\n", client->wizardHealth);
+					//next turn
+					partyIndex++;
+					PartyNextTurn(ent);
+
+					//get screen set up
+
+					if (client->wizardHealth == 100)
+					{
+						health = malloc(3);
+					}
+					if (client->wizardHealth < 100 && client->wizardHealth > 9)
+					{
+						health = malloc(2);
+					}
+					if (client->wizardHealth < 10)
+					{
+						health = malloc(1);
+					}
+					sprintf(health, "%d", client->wizardHealth);
+
+					healthlen = strlen(health);
+					begin = "The wizard now has ";
+					beginlen = strlen(begin);
+					end = " health!";
+					endlen = strlen(end);
+
+					guide = malloc(healthlen + beginlen + endlen);
+					memcpy(guide, begin, beginlen);
+					memcpy(guide + beginlen, health, healthlen);
+					memcpy(guide + beginlen + healthlen, end, endlen);
+					guideSet = true;
+
+					info = "The wizard used a health potion!";
+					infoSet = true;
+
+					CombatScreen(ent);
+
+					client->potions = client->potions - 1;
+					return;
+					break;
+				case CLASS_WARRIOR:
+					client->warriorHealth += heal;
+					if (client->warriorHealth > 100)
+					{
+						client->warriorHealth = 100;
+					}
+
+					client->warriorDead = false;
+
+					//gi.cprintf(ent, 1, "The warrior now has %d health!\n", client->warriorHealth);
+					//next turn
+					partyIndex++;
+					PartyNextTurn(ent);
+
+					//get screen set up
+
+					if (client->warriorHealth == 100)
+					{
+						health = malloc(3);
+					}
+					if (client->warriorHealth < 100 && client->warriorHealth > 9)
+					{
+						health = malloc(2);
+					}
+					if (client->warriorHealth < 10)
+					{
+						health = malloc(1);
+					}
+					sprintf(health, "%d", client->warriorHealth);
+
+					healthlen = strlen(health);
+					begin = "The warrior now has ";
+					beginlen = strlen(begin);
+					end = " health!";
+					endlen = strlen(end);
+
+					guide = malloc(healthlen + beginlen + endlen);
+					memcpy(guide, begin, beginlen);
+					memcpy(guide + beginlen, health, healthlen);
+					memcpy(guide + beginlen + healthlen, end, endlen);
+					guideSet = true;
+
+					info = "The warrior used a health potion!";
+					infoSet = true;
+
+					CombatScreen(ent);
+
+					client->potions = client->potions - 1;
+					return;
+					break;
+				}
+
+			}
+
+			if (Q_stricmp(gi.argv(1), "magicpotion") == 0)
+			{
+				if (client->magicPotions <= 0)
+				{
+					gi.cprintf(ent, 1, "You do not have any magic potions!\n");
+					return;
+				}
+			}
+
+			if (Q_stricmp(gi.argv(1), "bomb") == 0)
+			{
+				if (client->bombs <= 0)
+				{
+					gi.cprintf(ent, 1, "You do not have any bombs!\n");
+					return;
+				}
+			}
+		}
+	}
+}
+
 //lists skills that characters can use
 void Cmd_Skills_f(edict_t* ent)
 {
@@ -2726,6 +3146,7 @@ void Cmd_Buy_f(edict_t* ent)
 			gi.cprintf(ent, 1, "Hopefully this is the right digit: %d\n", atoi(gi.argv(i)));
 		}
 	}*/
+	//health potions
 	if (Q_stricmp(gi.argv(1), "potion") == 0)
 	{
 		//gi.cprintf(ent, 1, "Got to potion. argc is: %d\n", gi.argc());
@@ -2767,6 +3188,7 @@ void Cmd_Buy_f(edict_t* ent)
 		}
 	}
 
+	//MP potions
 	if (Q_stricmp(gi.argv(1), "magicpotion") == 0)
 	{
 		//gi.cprintf(ent, 1, "Got to potion. argc is: %d\n", gi.argc());
