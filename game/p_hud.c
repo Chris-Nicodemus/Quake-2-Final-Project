@@ -412,8 +412,11 @@ void CombatScreen(edict_t* ent)
 			/*enemy->touch = NULL;
 			monster_death_use(enemy);
 			enemy->die(enemy, ent, ent, 0, NULL);*/
-			guide = "You have won!";
+			//guide = "You have won!";
 			Cmd_CleanValues_f(ent);
+			G_FreeEdict(enemy);
+			client->enemy = NULL;
+			
 		}
 		enemies = "NOT IN COMBAT";
 		if(!guideSet)

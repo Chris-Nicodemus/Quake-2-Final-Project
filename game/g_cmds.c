@@ -1749,10 +1749,10 @@ void Cmd_UseSkill_f(edict_t* ent)
 				//check for MP
 				if (client->rangerMP >= 25)
 				{
-					//do skill: attack all living enemies
-					if (enemy->enemy1Type != MONSTER_NONE)
+					//do skill: attack all living enemies in reverse order in case any die
+					if (enemy->enemy3Type != MONSTER_NONE)
 					{
-						PartyAttack(ent, 1, 5, true, true);
+						PartyAttack(ent, 3, 5, true, true);
 					}
 
 					if (enemy->enemy2Type != MONSTER_NONE)
@@ -1760,9 +1760,9 @@ void Cmd_UseSkill_f(edict_t* ent)
 						PartyAttack(ent, 2, 5, true, true);
 					}
 
-					if (enemy->enemy3Type != MONSTER_NONE)
+					if (enemy->enemy1Type != MONSTER_NONE)
 					{
-						PartyAttack(ent, 3, 5, true, true);
+						PartyAttack(ent, 1, 5, true, true);
 					}
 
 					//say what happened
@@ -1979,20 +1979,32 @@ void Cmd_UseSkill_f(edict_t* ent)
 				if (client->wizardMP >= 35)
 				{
 					int damage = 15;
-					//do skill: attack all living enemies
-					if (enemy->enemy1Type != MONSTER_NONE)
+					//do skill: attack all living enemies in reverse order in case any die
+					if (enemy->enemy3Type != MONSTER_NONE)
 					{
-						if (enemy->enemy1Type == MONSTER_GOBLIN || enemy->enemy1Type == MONSTER_ORC)
+						if (enemy->enemy3Type == MONSTER_GOBLIN || enemy->enemy3Type == MONSTER_ORC)
 						{
-							PartyAttack(ent, 1, damage + 10, true, false);
+							PartyAttack(ent, 3, damage + 10, true, false);
 						}
 						else
 						{
-							PartyAttack(ent, 1, damage, true, false);
+							PartyAttack(ent, 3, damage, true, false);
 						}
 					}
 
 					if (enemy->enemy2Type != MONSTER_NONE)
+					{
+							if (enemy->enemy2Type == MONSTER_GOBLIN || enemy->enemy2Type == MONSTER_ORC)
+							{
+								PartyAttack(ent, 2, damage + 10, true, false);
+							}
+							else
+							{
+								PartyAttack(ent, 2, damage, true, false);
+							}
+					}
+
+					if (enemy->enemy1Type != MONSTER_NONE)
 					{
 							if (enemy->enemy1Type == MONSTER_GOBLIN || enemy->enemy1Type == MONSTER_ORC)
 							{
@@ -2001,18 +2013,6 @@ void Cmd_UseSkill_f(edict_t* ent)
 							else
 							{
 								PartyAttack(ent, 1, damage, true, false);
-							}
-					}
-
-					if (enemy->enemy3Type != MONSTER_NONE)
-					{
-							if (enemy->enemy3Type == MONSTER_GOBLIN || enemy->enemy3Type == MONSTER_ORC)
-							{
-								PartyAttack(ent, 3, damage + 10, true, false);
-							}
-							else
-							{
-								PartyAttack(ent, 3, damage, true, false);
 							}
 					}
 
@@ -2810,6 +2810,8 @@ void Cmd_UseItem_f(edict_t* ent)
 	//in combat
 	else
 	{
+		edict_t* enemy = client->enemy;
+
 		//turn exclusion
 		if (!client->turn)
 		{
@@ -3045,6 +3047,209 @@ void Cmd_UseItem_f(edict_t* ent)
 					gi.cprintf(ent, 1, "You do not have any magic potions!\n");
 					return;
 				}
+
+				//apply effects
+				int mp = 40;
+				char* magic;
+				char* begin;
+				char* end;
+
+				int magiclen;
+				int beginlen;
+				int endlen;
+				switch (partyIndex)
+				{
+				case CLASS_HERO:
+					client->heroMP += mp;
+					if (client->heroMP > 100)
+					{
+						client->heroMP = 100;
+					}
+
+					//next turn
+					partyIndex++;
+					PartyNextTurn(ent);
+
+					//get screen set up
+					if (client->heroMP == 100)
+					{
+						magic = malloc(3);
+					}
+					if (client->heroMP < 100 && client->heroMP > 9)
+					{
+						magic = malloc(2);
+					}
+					if (client->heroMP < 10)
+					{
+						magic = malloc(1);
+					}
+					sprintf(magic, "%d", client->heroMP);
+
+					magiclen = strlen(magic);
+					begin = "The hero now has ";
+					beginlen = strlen(begin);
+					end = " MP!";
+					endlen = strlen(end);
+
+					guide = malloc(magiclen + beginlen + endlen);
+					memcpy(guide, begin, beginlen);
+					memcpy(guide + beginlen, magic, magiclen);
+					memcpy(guide + beginlen + magiclen, end, endlen);
+					guideSet = true;
+
+					info = "The hero used a magic potion!";
+					infoSet = true;
+
+					CombatScreen(ent);
+					//gi.cprintf(ent, 1, "The hero now has %d health!\n", ent->health);
+
+					client->magicPotions = client->magicPotions - 1;
+					return;
+					break;
+				case CLASS_RANGER:
+					client->rangerMP += mp;
+					if (client->rangerMP > 100)
+					{
+						client->rangerMP = 100;
+					}
+
+					//gi.cprintf(ent, 1, "The ranger now has %d health!\n", client->rangerHealth);
+					//next turn
+					partyIndex++;
+					PartyNextTurn(ent);
+
+					//get screen set up
+					if (client->rangerMP == 100)
+					{
+						magic = malloc(3);
+					}
+					if (client->rangerMP < 100 && client->rangerMP > 9)
+					{
+						magic = malloc(2);
+					}
+					if (client->rangerMP < 10)
+					{
+						magic = malloc(1);
+					}
+					sprintf(magic, "%d", client->rangerMP);
+
+					magiclen = strlen(magic);
+					begin = "The ranger now has ";
+					beginlen = strlen(begin);
+					end = " MP!";
+					endlen = strlen(end);
+
+					guide = malloc(magiclen + beginlen + endlen);
+					memcpy(guide, begin, beginlen);
+					memcpy(guide + beginlen, magic, magiclen);
+					memcpy(guide + beginlen + magiclen, end, endlen);
+					guideSet = true;
+
+					info = "The ranger used a magic potion!";
+					infoSet = true;
+
+					CombatScreen(ent);
+
+					client->magicPotions = client->magicPotions - 1;
+					return;
+					break;
+				case CLASS_WIZARD:
+					client->wizardMP += mp;
+					if (client->wizardMP > 100)
+					{
+						client->wizardMP = 100;
+					}
+
+					//gi.cprintf(ent, 1, "The wizard now has %d health!\n", client->wizardHealth);
+					//next turn
+					partyIndex++;
+					PartyNextTurn(ent);
+
+					//get screen set up
+
+					if (client->wizardMP == 100)
+					{
+						magic = malloc(3);
+					}
+					if (client->wizardMP < 100 && client->wizardMP > 9)
+					{
+						magic = malloc(2);
+					}
+					if (client->wizardMP < 10)
+					{
+						magic = malloc(1);
+					}
+					sprintf(magic, "%d", client->wizardMP);
+
+					magiclen = strlen(magic);
+					begin = "The wizard now has ";
+					beginlen = strlen(begin);
+					end = " MP!";
+					endlen = strlen(end);
+
+					guide = malloc(magiclen + beginlen + endlen);
+					memcpy(guide, begin, beginlen);
+					memcpy(guide + beginlen, magic, magiclen);
+					memcpy(guide + beginlen + magiclen, end, endlen);
+					guideSet = true;
+
+					info = "The wizard used a magic potion!";
+					infoSet = true;
+
+					CombatScreen(ent);
+
+					client->magicPotions = client->magicPotions - 1;
+					return;
+					break;
+				case CLASS_WARRIOR:
+					client->warriorMP += mp;
+					if (client->warriorMP > 100)
+					{
+						client->warriorMP = 100;
+					}
+
+					//gi.cprintf(ent, 1, "The warrior now has %d health!\n", client->warriorHealth);
+					//next turn
+					partyIndex++;
+					PartyNextTurn(ent);
+
+					//get screen set up
+
+					if (client->warriorMP == 100)
+					{
+						magic = malloc(3);
+					}
+					if (client->warriorMP < 100 && client->warriorMP > 9)
+					{
+						magic = malloc(2);
+					}
+					if (client->warriorMP < 10)
+					{
+						magic = malloc(1);
+					}
+					sprintf(magic, "%d", client->warriorMP);
+
+					magiclen = strlen(magic);
+					begin = "The warrior now has ";
+					beginlen = strlen(begin);
+					end = " MP!";
+					endlen = strlen(end);
+
+					guide = malloc(magiclen + beginlen + endlen);
+					memcpy(guide, begin, beginlen);
+					memcpy(guide + beginlen, magic, magiclen);
+					memcpy(guide + beginlen + magiclen, end, endlen);
+					guideSet = true;
+
+					info = "The warrior used a magic potion!";
+					infoSet = true;
+
+					CombatScreen(ent);
+
+					client->magicPotions = client->magicPotions - 1;
+					return;
+					break;
+				}
 			}
 
 			if (Q_stricmp(gi.argv(1), "bomb") == 0)
@@ -3054,6 +3259,33 @@ void Cmd_UseItem_f(edict_t* ent)
 					gi.cprintf(ent, 1, "You do not have any bombs!\n");
 					return;
 				}
+
+				//damage all enemies in reverse order in case enemies die
+				if(enemy->enemy3Type != MONSTER_NONE)
+				{
+					PartyAttack(ent, 3, 20, false, false);
+				}
+				if (enemy->enemy2Type != MONSTER_NONE)
+				{
+					PartyAttack(ent, 2, 20, false, false);
+				}
+				if (enemy->enemy1Type != MONSTER_NONE)
+				{
+					PartyAttack(ent, 1, 20, false, false);
+				}
+
+				client->bombs = client->bombs - 1;
+
+				partyIndex++;
+				PartyNextTurn(ent);
+
+				info = "You used a bomb to damage all enemies!";
+				infoSet = true;
+
+				guide = "All enemies took 20 damage!";
+				guideSet = true;
+
+				CombatScreen(ent);
 			}
 		}
 	}
@@ -3248,7 +3480,7 @@ void Cmd_Buy_f(edict_t* ent)
 			else
 			{
 				ent->client->gunpowder = ent->client->gunpowder - price;
-				ent->client->potions = ent->client->potions + quantity;
+				ent->client->bombs = ent->client->bombs + quantity;
 				gi.centerprintf(ent, "Purchased");
 				return;
 			}
@@ -3264,7 +3496,7 @@ void Cmd_Buy_f(edict_t* ent)
 			else
 			{
 				ent->client->gunpowder = ent->client->gunpowder - price;
-				ent->client->potions = ent->client->potions + 1;
+				ent->client->bombs = ent->client->bombs + 1;
 				gi.centerprintf(ent, "Purchased");
 				return;
 			}
@@ -3870,13 +4102,13 @@ void Cmd_CleanValues_f(edict_t* ent)
 	enemy->demonShroud2 = false;
 	enemy->demonShroud3 = false;
 
-	client->enemy = NULL;
+	//client->enemy = NULL;
 
 	partyIndex = 1;
 	monsterIndex = 1;
 }
 
-//main combat function
+//main combat function that wasn't used at all pay no attention to this lol
 void Cmd_Combat_f(edict_t* ent)
 {
 	gclient_t* client;
