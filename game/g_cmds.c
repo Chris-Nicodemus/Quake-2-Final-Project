@@ -4462,6 +4462,11 @@ void ClientCommand (edict_t *ent)
 		Cmd_UseSkill_f(ent);
 		return;
 	}
+	if (Q_stricmp(cmd, "useitem") == 0)
+	{
+		Cmd_UseItem_f(ent);
+		return;
+	}
 	if (Q_stricmp(cmd, "guide") == 0)
 	{
 		Cmd_Guide_f(ent);
