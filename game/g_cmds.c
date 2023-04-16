@@ -2424,24 +2424,24 @@ void Cmd_UseSkill_f(edict_t* ent)
 						target = 1;
 						break;
 					case 2:
-						if (Q_stricmp(gi.argv(3), "left") == 0)
-						{
-							target = 1;
-							break;
-						}
-						if (Q_stricmp(gi.argv(3), "right") == 0)
-						{
-							target = 2;
-							break;
-						}
+if (Q_stricmp(gi.argv(3), "left") == 0)
+{
+	target = 1;
+	break;
+}
+if (Q_stricmp(gi.argv(3), "right") == 0)
+{
+	target = 2;
+	break;
+}
 
-						//invalid arg
-						if (target == 0)
-						{
-							gi.cprintf(ent, 1, "You did not enter a valid target!\n");
-							return;
-						}
-						break;
+//invalid arg
+if (target == 0)
+{
+	gi.cprintf(ent, 1, "You did not enter a valid target!\n");
+	return;
+}
+break;
 					case 3:
 						if (Q_stricmp(gi.argv(3), "left") == 0)
 						{
@@ -2472,7 +2472,7 @@ void Cmd_UseSkill_f(edict_t* ent)
 					if (target != 0)
 					{
 
-						PartyAttack(ent, 1, 10, true, true);
+						PartyAttack(ent, target, 10, true, true);
 
 						client->warriorMP = client->warriorMP - 25;
 
@@ -2502,6 +2502,139 @@ void Cmd_UseSkill_f(edict_t* ent)
 					return;
 				}
 			}
+		}
+	}
+}
+
+//basic attack command
+void Cmd_Attack_f(edict_t* ent)
+{
+	gclient_t* client;
+	if (ent->client)
+	{
+		client = ent->client;
+	}
+	else
+	{
+		return;
+	}
+	if (!client->inCombat)
+	{
+		gi.cprintf(ent, 1, "Can only attack in combat!\n");
+		return;
+	}
+	if (!client->turn)
+	{
+		gi.cprintf(ent, 1, "Can only attack on your turn!\n");
+	}
+	edict_t* enemy;
+	enemy = client->enemy;
+
+	if (gi.argc() == 1)
+	{
+		if (numEnemies > 1)
+		{
+			gi.cprintf(ent, 1, "Please specify your target!\n");
+			return;
+		}
+		
+		if (numEnemies == 1)
+		{
+			PartyAttack(ent, 1, 0, true, true);
+
+
+			if (!(Q_stricmp(info, "You have defeated an enemy!") == 0))
+			{
+				info = "You attacked an enemy!";
+				infoSet = true;
+			}
+
+			partyIndex++;
+			PartyNextTurn(ent);
+
+			CombatScreen(ent);
+			return;
+		}
+	}
+
+	//multiple enemies
+	if(gi.argc() == 2)
+	{
+		int target = 0;
+
+		switch (numEnemies)
+		{
+		case 1:
+			target = 1;
+			break;
+		case 2:
+			if (Q_stricmp(gi.argv(1), "left") == 0)
+			{
+				target = 1;
+				break;
+			}
+			if (Q_stricmp(gi.argv(1), "right") == 0)
+			{
+				target = 2;
+				break;
+			}
+
+			//invalid arg
+			if (target == 0)
+			{
+				gi.cprintf(ent, 1, "You did not enter a valid target!\n");
+				return;
+			}
+			break;
+		case 3:
+			if (Q_stricmp(gi.argv(1), "left") == 0)
+			{
+				target = 1;
+				break;
+			}
+			if (Q_stricmp(gi.argv(1), "center") == 0)
+			{
+				target = 2;
+				break;
+			}
+			if (Q_stricmp(gi.argv(1), "right") == 0)
+			{
+				target = 3;
+				break;
+			}
+
+			//invalid arg
+			if (target == 0)
+			{
+				gi.cprintf(ent, 1, "You did not enter a valid target!\n");
+				return;
+			}
+			break;
+		}
+
+		//do the attack if target is working
+		if (target != 0)
+		{
+
+			PartyAttack(ent, target, 0, true, true);
+
+
+			if (!(Q_stricmp(info, "You have defeated an enemy!") == 0))
+			{
+				info = "You attacked an enemy!";
+				infoSet = true;
+			}
+
+			partyIndex++;
+			PartyNextTurn(ent);
+
+			CombatScreen(ent);
+			return;
+		}
+		else
+		{
+			gi.cprintf(ent, 1, "Something went wrong!\n");
+			return;
 		}
 	}
 }
@@ -3211,6 +3344,7 @@ void Cmd_Buy_f(edict_t* ent)
 		}
 	}
 }
+
 void Cmd_Gold_f(edict_t* ent)
 {
 	gclient_t* client;
@@ -3775,6 +3909,11 @@ qboolean test;
 void Cmd_Test_f (edict_t* ent)
 {
 	//G_FreeEdict(ent->client->enemy);
+	if (ent->client->inCombat && !ent->client->turn)
+	{
+		ent->client->turn = true;
+	}
+
 	if (gi.argc() == 2)
 	{
 		partyIndex = atoi(gi.argv(1));
@@ -3904,6 +4043,11 @@ void ClientCommand (edict_t *ent)
 	if (Q_stricmp(cmd, "guide") == 0)
 	{
 		Cmd_Guide_f(ent);
+		return;
+	}
+	if (Q_stricmp(cmd, "attack") == 0)
+	{
+		Cmd_Attack_f(ent);
 		return;
 	}
 
