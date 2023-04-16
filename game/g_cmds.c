@@ -903,6 +903,48 @@ void Cmd_PlayerList_f(edict_t *ent)
 int partyIndex = 1;
 int monsterIndex = 1;
 qboolean shopOpen = false;
+
+//if battle ends or you run from battle, enemy stats and values are cleaned
+void Cmd_CleanValues_f(edict_t* ent)
+{
+	gclient_t* client;
+
+	if (ent->client)
+	{
+		client = ent->client;
+	}
+	else
+	{
+		return;
+	}
+	client->heroTempHealth = 0;
+	client->rangerTempHealth = 0;
+	client->wizardTempHealth = 0;
+	client->warriorTempHealth = 0;
+	client->heroBuffer = false;
+	client->warriorTaunt = false;
+
+	edict_t* enemy;
+	enemy = client->enemy;
+
+	enemy->enemy1Health = 0;
+	enemy->enemy1Type = 0;
+	enemy->enemy2Health = 0;
+	enemy->enemy2Type = 0;
+	enemy->enemy3Health = 0;
+	enemy->enemy3Type = 0;
+	enemy->demonShroud1 = false;
+	enemy->demonShroud2 = false;
+	enemy->demonShroud3 = false;
+	enemy->enemy1Weak = false;
+	enemy->enemy2Weak = false;
+	enemy->enemy3Weak = false;
+	//client->enemy = NULL;
+
+	partyIndex = 1;
+	monsterIndex = 1;
+}
+
 void Cmd_Shop_f(edict_t* ent)
 {
 	gclient_t* client;
@@ -939,6 +981,7 @@ extern qboolean infoSet;
 extern char* guide;
 extern qboolean guideSet;
 
+extern qboolean firstCombat;
 //hero stuff
 qboolean smite;
 qboolean buffer;
@@ -948,7 +991,7 @@ int shieldBash = 0;
 
 extern int numEnemies;
 
-//Finds next turn for player
+//Finds next turn for player and updates enemy start of turn effects
 void PartyNextTurn(edict_t* ent)
 {
 	gclient_t* client;
@@ -960,6 +1003,8 @@ void PartyNextTurn(edict_t* ent)
 	{
 		return;
 	}
+
+	edict_t* enemy = client->enemy;
 
 	switch (partyIndex)
 	{
@@ -978,6 +1023,23 @@ void PartyNextTurn(edict_t* ent)
 		{
 			client->turn = false;
 			partyIndex = 1;
+
+			//just to be safe
+			monsterIndex = 1;
+
+			//give the demons their shrouds back
+			if (enemy->enemy1Type == MONSTER_DEMON)
+			{
+				enemy->demonShroud1 = true;
+			}
+			if (enemy->enemy2Type == MONSTER_DEMON)
+			{
+				enemy->demonShroud2 = true;
+			}
+			if (enemy->enemy3Type == MONSTER_DEMON)
+			{
+				enemy->demonShroud3 = true;
+			}
 		}
 		break;
 	case 5:
@@ -1054,7 +1116,7 @@ void PartyAttack(edict_t* ent, int target, int damage, qboolean weapon, qboolean
 			info = "The demons\'s shroud blocked the attack!";
 			infoSet = true;
 
-			guide = "Your attack did no damage!";
+			guide = "The demon\'s shroud blocked your attack!";
 			guideSet = true;
 			return;
 		}
@@ -1371,21 +1433,724 @@ void PartyAttack(edict_t* ent, int target, int damage, qboolean weapon, qboolean
 	smite = false;
 }
 
-//Monster attack damage calculation
-void MonsterAttack(edict_t* ent, int target, int damage)
+//AoE attacks
+int goblinBomb = 1;		//triggers at 4
+int drakeFire = 1;		//triggers at 3
+int dragonFire = 1;		//triggers at 2
+
+qboolean goblin = false;	//true if there is a goblin among the enemies
+qboolean drake = false;		//true if there is a drake
+qboolean dragon = false;	//true if there is a dragon
+
+qboolean battleLost = false; //true if the monsters kill the hero
+
+void EnemyCheck(edict_t* ent)
+{
+	gclient_t* client;
+	if (ent->client)
+	{
+		client = ent->client;
+	}
+	else
+	{
+		return;
+	}
+
+	if (!client->inCombat)
+	{
+		return;
+	}
+
+	edict_t* enemy = client->enemy;
+
+	//checks for goblin
+	if (enemy->enemy1Type == MONSTER_GOBLIN || enemy->enemy2Type == MONSTER_GOBLIN || enemy->enemy3Type == MONSTER_GOBLIN)
+	{
+		goblin = true;
+	}
+	else
+	{
+		goblin = false;
+		goblinBomb = 1;
+	}
+
+	//checks for drake
+	if (enemy->enemy1Type == MONSTER_DRAKE || enemy->enemy2Type == MONSTER_DRAKE)
+	{
+		drake = true;
+		
+	}
+	else
+	{
+		drake = false;
+		drakeFire = 1;
+	}
+
+	//checks for dragon
+	if (enemy->enemy1Type == MONSTER_DRAGON)
+	{
+		dragon = true;
+	}
+	else
+	{
+		dragon = false;
+		dragonFire = 1;
+	}
+
+}
+
+//randomizes damage of attacks for monsters and targets of attacks for monsters
+int Generate(int min, int range)
 {
 	int deal = 0;
-	//range
-	deal = (int)(crandom() * 6);
+
+	deal = (int)(crandom() * range);
 
 	//invert negatives
-	if (deal < 0)
+	if(deal < 0)
 	{
 		deal = deal * -1;
 	}
+
 	//increase min values
-	deal += 5;
-	deal += damage;
+	deal += min;
+
+	return deal;
+}
+
+//finds next turn if on monster team
+void MonsterNextTurn(edict_t* ent)
+{
+	gclient_t* client;
+	if (ent->client)
+	{
+		client = ent->client;
+	}
+	else
+	{
+		return;
+	}
+
+	if (!client->inCombat)
+	{
+		return;
+	}
+
+	edict_t* enemy = client->enemy;
+
+
+	if (monsterIndex > numEnemies)
+	{
+		monsterIndex = 1;
+		partyIndex = 1;
+
+		//end curse of frailty
+		enemy->enemy1Weak = false;
+		enemy->enemy2Weak = false;
+		enemy->enemy3Weak = false;
+
+		//end hero temp health
+		client->heroBuffer = false;
+		client->heroTempHealth = 0;
+		client->rangerTempHealth = 0;
+		client->warriorTempHealth = 0;
+		client->wizardTempHealth = 0;
+
+		//tick down shieldBash if it is active
+		if (shieldBash > 0)
+		{
+			shieldBash--;
+		}
+
+		//turn off taunt
+		client->warriorTaunt = false;
+
+		//AoE tick up
+		if (goblin)
+		{
+			goblinBomb++;
+		}
+
+		if (drake)
+		{
+			drakeFire++;
+		}
+
+		if (dragon)
+		{
+			dragonFire++;
+		}
+	}
+}
+
+//Monster attack damage calculation
+void MonsterAttack(edict_t* ent, int target, int damage)
+{
+	gclient_t* client;
+	if (ent->client)
+	{
+		client = ent->client;
+	}
+	else
+	{
+		return;
+	}
+
+	edict_t* enemy = client->enemy;
+	char* begin;
+	char* dealStr;
+	char* end;
+
+	int beginlen;
+	int dealLen;
+	int endlen;
+
+	
+	switch (target)
+	{
+	case CLASS_HERO:
+
+		damage -= (client->heroArmor * 3);
+		if (damage < 0)
+		{
+			damage = 0;
+
+			info = "The enemy's attack was too weak to harm you!";
+			infoSet = true;
+
+			guide = "The hero took 0 damage!";
+			guideSet = true;
+			return;
+		}
+		if (buffer)
+		{
+			if (client->heroTempHealth > damage)
+			{
+				//do damage
+				client->heroTempHealth = client->heroTempHealth - damage;
+
+				//set info
+				info = "The enemy has attacked your holy shield!";
+				infoSet = true;
+
+				//set guide
+				if (damage > 9)
+				{
+					dealStr = malloc(2);
+				}
+				if (damage < 10)
+				{
+					dealStr = malloc(1);
+				}
+				sprintf(dealStr, "%d", damage);
+				dealLen = strlen(dealStr);
+				begin = "The enemy has dealt ";
+				beginlen = strlen(begin);
+				end = " to the hero\'s shield!";
+				endlen = strlen(end);
+
+				guide = malloc(beginlen + dealLen + endlen);
+				memcpy(guide, begin, beginlen);
+				memcpy(guide + beginlen, dealStr, dealLen);
+				memcpy(guide + beginlen + dealLen, end, endlen);
+				guideSet = true;
+			}
+
+			if (client->heroTempHealth <= damage)
+			{
+				damage -= client->heroTempHealth;
+				client->heroTempHealth = 0;
+
+				info = "The enemy has broken your holy shield!";
+				infoSet = true;
+
+				//set guide
+				if (damage > 9)
+				{
+					dealStr = malloc(2);
+				}
+				if (damage < 10)
+				{
+					dealStr = malloc(1);
+				}
+				sprintf(dealStr, "%d", damage);
+				dealLen = strlen(dealStr);
+				begin = "The enemy has dealt ";
+				beginlen = strlen(begin);
+				end = " to the hero!";
+				endlen = strlen(end);
+
+				guide = malloc(beginlen + dealLen + endlen);
+				memcpy(guide, begin, beginlen);
+				memcpy(guide + beginlen, dealStr, dealLen);
+				memcpy(guide + beginlen + dealLen, end, endlen);
+				guideSet = true;
+			}
+		}
+		else
+		{
+			ent->health = ent->health - damage;
+
+			info = "The hero was attacked!";
+			infoSet = true;
+
+			//set guide
+			if (damage > 9)
+			{
+				dealStr = malloc(2);
+			}
+			if (damage < 10)
+			{
+				dealStr = malloc(1);
+			}
+			sprintf(dealStr, "%d", damage);
+			dealLen = strlen(dealStr);
+			begin = "The enemy has dealt ";
+			beginlen = strlen(begin);
+			end = " to the hero!";
+			endlen = strlen(end);
+
+			guide = malloc(beginlen + dealLen + endlen);
+			memcpy(guide, begin, beginlen);
+			memcpy(guide + beginlen, dealStr, dealLen);
+			memcpy(guide + beginlen + dealLen, end, endlen);
+			guideSet = true;
+		}
+
+		//lose state only for hero. You can go on fighting so long as the hero is alive
+		if (ent->health <= 0)
+		{
+			battleLost = true;
+
+			firstCombat = false;
+			client->gold = 0;
+			client->gunpowder = 0;
+			client->scales = 0;
+
+			client->potions = 0;
+			client->bombs = 0;
+			client->magicPotions = 0;
+
+			client->heroArmor = 0;
+			client->heroWeapon = 0;
+			client->rangerArmor = 0;
+			client->rangerWeapon = 0;
+			client->wizardArmor = 0;
+			client->wizardWeapon = 0;
+			client->warriorArmor = 0;
+			client->warriorWeapon = 0;
+
+			partyIndex = 1;
+			monsterIndex = 1;
+
+			shieldBash = 0;
+			smite = false;
+			buffer = false;
+
+			client->inCombat = false;
+			Cmd_CleanValues_f(ent);
+			client->enemy = NULL;
+
+			if (ent->client->showhelp)
+			{
+				Cmd_Help_f(ent);
+			}
+
+			gi.centerprintf(ent, "The hero has died! All hope is lost!");
+
+			Cmd_Kill_f(ent);
+			return;
+		}
+	case CLASS_RANGER:
+		damage -= (client->rangerArmor * 3);
+		if (damage < 0)
+		{
+			damage = 0;
+
+			info = "The enemy's attack was too weak to harm you!";
+			infoSet = true;
+
+			guide = "The ranger took 0 damage!";
+			guideSet = true;
+			return;
+		}
+		if (buffer)
+		{
+			if (client->rangerTempHealth > damage)
+			{
+				//do damage
+				client->rangerTempHealth = client->rangerTempHealth - damage;
+
+				//set info
+				info = "The enemy has attacked your holy shield!";
+				infoSet = true;
+
+				//set guide
+				if (damage > 9)
+				{
+					dealStr = malloc(2);
+				}
+				if (damage < 10)
+				{
+					dealStr = malloc(1);
+				}
+				sprintf(dealStr, "%d", damage);
+				dealLen = strlen(dealStr);
+				begin = "The enemy has dealt ";
+				beginlen = strlen(begin);
+				end = " to the ranger\'s shield!";
+				endlen = strlen(end);
+
+				guide = malloc(beginlen + dealLen + endlen);
+				memcpy(guide, begin, beginlen);
+				memcpy(guide + beginlen, dealStr, dealLen);
+				memcpy(guide + beginlen + dealLen, end, endlen);
+				guideSet = true;
+			}
+
+			if (client->rangerTempHealth <= damage)
+			{
+				damage -= client->rangerTempHealth;
+				client->rangerTempHealth = 0;
+
+				info = "The enemy has broken your holy shield!";
+				infoSet = true;
+
+				//set guide
+				if (damage > 9)
+				{
+					dealStr = malloc(2);
+				}
+				if (damage < 10)
+				{
+					dealStr = malloc(1);
+				}
+				sprintf(dealStr, "%d", damage);
+				dealLen = strlen(dealStr);
+				begin = "The enemy has dealt ";
+				beginlen = strlen(begin);
+				end = " to the ranger!";
+				endlen = strlen(end);
+
+				guide = malloc(beginlen + dealLen + endlen);
+				memcpy(guide, begin, beginlen);
+				memcpy(guide + beginlen, dealStr, dealLen);
+				memcpy(guide + beginlen + dealLen, end, endlen);
+				guideSet = true;
+			}
+		}
+		else
+		{
+			client->rangerHealth = client->rangerHealth - damage;
+
+			info = "The ranger was attacked!";
+			infoSet = true;
+
+			//set guide
+			if (damage > 9)
+			{
+				dealStr = malloc(2);
+			}
+			if (damage < 10)
+			{
+				dealStr = malloc(1);
+			}
+			sprintf(dealStr, "%d", damage);
+			dealLen = strlen(dealStr);
+			begin = "The enemy has dealt ";
+			beginlen = strlen(begin);
+			end = " to the ranger!";
+			endlen = strlen(end);
+
+			guide = malloc(beginlen + dealLen + endlen);
+			memcpy(guide, begin, beginlen);
+			memcpy(guide + beginlen, dealStr, dealLen);
+			memcpy(guide + beginlen + dealLen, end, endlen);
+			guideSet = true;
+		}
+
+		if (client->rangerHealth <= 0)
+		{
+			client->rangerHealth = 0;
+			client->rangerDead = true;
+
+			info = "The ranger has died!";
+			infoSet = true;
+		}
+		return;
+	case CLASS_WIZARD:
+		damage -= (client->wizardArmor * 3);
+		if (damage < 0)
+		{
+			damage = 0;
+
+			info = "The enemy's attack was too weak to harm you!";
+			infoSet = true;
+
+			guide = "The wizard took 0 damage!";
+			guideSet = true;
+			return;
+		}
+		if (buffer)
+		{
+			if (client->wizardTempHealth > damage)
+			{
+				//do damage
+				client->wizardTempHealth = client->wizardTempHealth - damage;
+
+				//set info
+				info = "The enemy has attacked your holy shield!";
+				infoSet = true;
+
+				//set guide
+				if (damage > 9)
+				{
+					dealStr = malloc(2);
+				}
+				if (damage < 10)
+				{
+					dealStr = malloc(1);
+				}
+				sprintf(dealStr, "%d", damage);
+				dealLen = strlen(dealStr);
+				begin = "The enemy has dealt ";
+				beginlen = strlen(begin);
+				end = " to the wizard\'s shield!";
+				endlen = strlen(end);
+
+				guide = malloc(beginlen + dealLen + endlen);
+				memcpy(guide, begin, beginlen);
+				memcpy(guide + beginlen, dealStr, dealLen);
+				memcpy(guide + beginlen + dealLen, end, endlen);
+				guideSet = true;
+			}
+
+			if (client->wizardTempHealth <= damage)
+			{
+				damage -= client->wizardTempHealth;
+				client->wizardTempHealth = 0;
+
+				info = "The enemy has broken your holy shield!";
+				infoSet = true;
+
+				//set guide
+				if (damage > 9)
+				{
+					dealStr = malloc(2);
+				}
+				if (damage < 10)
+				{
+					dealStr = malloc(1);
+				}
+				sprintf(dealStr, "%d", damage);
+				dealLen = strlen(dealStr);
+				begin = "The enemy has dealt ";
+				beginlen = strlen(begin);
+				end = " to the wizard!";
+				endlen = strlen(end);
+
+				guide = malloc(beginlen + dealLen + endlen);
+				memcpy(guide, begin, beginlen);
+				memcpy(guide + beginlen, dealStr, dealLen);
+				memcpy(guide + beginlen + dealLen, end, endlen);
+				guideSet = true;
+			}
+		}
+		else
+		{
+			client->wizardHealth = client->wizardHealth - damage;
+
+			info = "The wizard was attacked!";
+			infoSet = true;
+
+			//set guide
+			if (damage > 9)
+			{
+				dealStr = malloc(2);
+			}
+			if (damage < 10)
+			{
+				dealStr = malloc(1);
+			}
+			sprintf(dealStr, "%d", damage);
+			dealLen = strlen(dealStr);
+			begin = "The enemy has dealt ";
+			beginlen = strlen(begin);
+			end = " to the wizard!";
+			endlen = strlen(end);
+
+			guide = malloc(beginlen + dealLen + endlen);
+			memcpy(guide, begin, beginlen);
+			memcpy(guide + beginlen, dealStr, dealLen);
+			memcpy(guide + beginlen + dealLen, end, endlen);
+			guideSet = true;
+		}
+
+		if (client->wizardHealth <= 0)
+		{
+			client->wizardHealth = 0;
+			client->wizardDead = true;
+
+			info = "The wizard has died!";
+			infoSet = true;
+		}
+		return;
+	case CLASS_WARRIOR:
+		damage -= (client->warriorArmor * 3);
+		if (shieldBash > 0)
+		{
+			damage -= 5;
+		}
+
+		if (damage < 0)
+		{
+			damage = 0;
+
+			info = "The enemy's attack was too weak to harm you!";
+			infoSet = true;
+
+			guide = "The warrior took 0 damage!";
+			guideSet = true;
+			return;
+		}
+
+		if (buffer)
+		{
+			if (client->warriorTempHealth > damage)
+			{
+				//do damage
+				client->warriorTempHealth = client->warriorTempHealth - damage;
+
+				//set info
+				info = "The enemy has attacked your holy shield!";
+				infoSet = true;
+
+				//set guide
+				if (damage > 9)
+				{
+					dealStr = malloc(2);
+				}
+				if (damage < 10)
+				{
+					dealStr = malloc(1);
+				}
+				sprintf(dealStr, "%d", damage);
+				dealLen = strlen(dealStr);
+				begin = "The enemy has dealt ";
+				beginlen = strlen(begin);
+				end = " to the warrior\'s shield!";
+				endlen = strlen(end);
+
+				guide = malloc(beginlen + dealLen + endlen);
+				memcpy(guide, begin, beginlen);
+				memcpy(guide + beginlen, dealStr, dealLen);
+				memcpy(guide + beginlen + dealLen, end, endlen);
+				guideSet = true;
+			}
+
+			if (client->warriorTempHealth <= damage)
+			{
+				damage -= client->warriorTempHealth;
+				client->warriorTempHealth = 0;
+
+				info = "The enemy has broken your holy shield!";
+				infoSet = true;
+
+				//set guide
+				if (damage > 9)
+				{
+					dealStr = malloc(2);
+				}
+				if (damage < 10)
+				{
+					dealStr = malloc(1);
+				}
+				sprintf(dealStr, "%d", damage);
+				dealLen = strlen(dealStr);
+				begin = "The enemy has dealt ";
+				beginlen = strlen(begin);
+				end = " to the warrior!";
+				endlen = strlen(end);
+
+				guide = malloc(beginlen + dealLen + endlen);
+				memcpy(guide, begin, beginlen);
+				memcpy(guide + beginlen, dealStr, dealLen);
+				memcpy(guide + beginlen + dealLen, end, endlen);
+				guideSet = true;
+			}
+		}
+		else
+		{
+			client->warriorHealth = client->warriorHealth - damage;
+
+			info = "The warrior was attacked!";
+			infoSet = true;
+
+			//set guide
+			if (damage > 9)
+			{
+				dealStr = malloc(2);
+			}
+			if (damage < 10)
+			{
+				dealStr = malloc(1);
+			}
+			sprintf(dealStr, "%d", damage);
+			dealLen = strlen(dealStr);
+			begin = "The enemy has dealt ";
+			beginlen = strlen(begin);
+			end = " to the warrior!";
+			endlen = strlen(end);
+
+			guide = malloc(beginlen + dealLen + endlen);
+			memcpy(guide, begin, beginlen);
+			memcpy(guide + beginlen, dealStr, dealLen);
+			memcpy(guide + beginlen + dealLen, end, endlen);
+			guideSet = true;
+		}
+
+		if (client->warriorHealth <= 0)
+		{
+			client->warriorHealth = 0;
+			client->warriorDead = true;
+
+			info = "The warrior has died!";
+			infoSet = true;
+		}
+		return;
+	}
+}
+
+void Cmd_MonsterBehave_f(edict_t* ent)
+{
+	gclient_t* client;
+	if (ent->client)
+	{
+		client = ent->client;
+	}
+	else
+	{
+		return;
+	}
+
+	//do nothing if not in combat
+	if (!client->inCombat)
+	{
+		return;
+	}
+
+	//do nothing if not enemy turn
+	if (client->turn)
+	{
+		return;
+	}
+
+	qboolean validTarget = false;
+	int target = 0;
+	int damage = 0;
+
+	//finds out if there are AoE attacks to consider
+	EnemyCheck(ent);
 
 }
 
@@ -4070,43 +4835,7 @@ void Cmd_CombatWon_f(edict_t* ent)
 	gi.centerprintf(ent, "You Won!");
 }
 
-//if battle ends or you run from battle, enemy stats and values are cleaned
-void Cmd_CleanValues_f(edict_t* ent)
-{
-	gclient_t* client;
 
-	if (ent->client)
-	{
-		client = ent->client;
-	}
-	else
-	{
-		return;
-	}
-	client->heroTempHealth = 0;
-	client->rangerTempHealth = 0;
-	client->wizardTempHealth = 0;
-	client->warriorTempHealth = 0;
-	client->heroBuffer = false;
-
-	edict_t* enemy;
-	enemy = client->enemy;
-
-	enemy->enemy1Health = 0;
-	enemy->enemy1Type = 0;
-	enemy->enemy2Health = 0;
-	enemy->enemy2Type = 0;
-	enemy->enemy3Health = 0;
-	enemy->enemy3Type = 0;
-	enemy->demonShroud1 = false;
-	enemy->demonShroud2 = false;
-	enemy->demonShroud3 = false;
-
-	//client->enemy = NULL;
-
-	partyIndex = 1;
-	monsterIndex = 1;
-}
 
 //main combat function that wasn't used at all pay no attention to this lol
 void Cmd_Combat_f(edict_t* ent)
@@ -4142,7 +4871,7 @@ void Cmd_Run_f(edict_t* ent)
 	{
 		return;
 	}
-	if (client->inCombat)
+	if (client->inCombat && client->turn)
 	{
 		client->inCombat = false;
 		Cmd_CleanValues_f(ent);
@@ -4155,9 +4884,13 @@ void Cmd_Run_f(edict_t* ent)
 
 		gi.centerprintf(ent, "Fled from combat!");
 	}
-	else
+	else if (!client->inCombat)
 	{
 		gi.centerprintf(ent, "You are not in combat!");
+	}
+	else if (!client->turn)
+	{
+		gi.cprintf(ent, 1, "You can only run on your turn!\n");
 	}
 
 }
@@ -4218,6 +4951,12 @@ void Cmd_LootStatVals_f(edict_t* ent, int enemyType, int numEnemy)
 			//setting enemy type and health
 			enemy->enemy1Type = MONSTER_DEMON;
 			enemy->enemy1Health = 160;
+			
+			//if a demon gets the drop on the player, it gets to have it's shroud on the first turn
+			if (!client->turn)
+			{
+				enemy->demonShroud1 = true;
+			}
 
 			//loot values
 			enemy->gunpowderValue = enemy->gunpowderValue + 10;
@@ -4236,7 +4975,7 @@ void Cmd_LootStatVals_f(edict_t* ent, int enemyType, int numEnemy)
 		}
 		break;
 
-	//enemy number 2
+	//enemy number 2 (cannot be a dragon)
 	case 2:
 		switch (enemyType)
 		{
@@ -4278,13 +5017,19 @@ void Cmd_LootStatVals_f(edict_t* ent, int enemyType, int numEnemy)
 			enemy->enemy2Type = MONSTER_DEMON;
 			enemy->enemy2Health = 160;
 
+			//if a demon gets the drop on the player, it gets to have it's shroud on the first turn
+			if (!client->turn)
+			{
+				enemy->demonShroud2 = true;
+			}
+
 			//loot values
 			enemy->goldValue = enemy->goldValue + 60;
 			break;
 		}
 		break;
 
-	//enemy number 3
+	//enemy number 3 can only be an orc or a goblin
 	case 3:
 		switch (enemyType)
 		{
@@ -4384,7 +5129,7 @@ void Cmd_CombatBegin_f(edict_t* ent)
 		//increase min values
 		enemyType += 3;
 
-		//skewing the values to make drakes and shadows spawn more often
+		//skewing the values to make drakes and shadow demons spawn more often
 		if (enemyType == 4)
 		{
 			enemyType = 3;
@@ -4421,6 +5166,7 @@ void Cmd_CombatBegin_f(edict_t* ent)
 				enemyType = 5;
 			}
 		}
+
 		Cmd_LootStatVals_f(ent, enemyType, 1);
 		Cmd_LootStatVals_f(ent, MONSTER_NONE, 2);
 		Cmd_LootStatVals_f(ent, MONSTER_NONE, 3);
@@ -4533,7 +5279,7 @@ void Cmd_Roll_f(edict_t* ent)
 	for (i = 0; i < 5; i++)
 	{
 		//range
-		random = (int)(crandom() * 6);
+		random = (int)(crandom() * 4);
 
 		//invert negatives
 		if (random < 0)
@@ -4543,7 +5289,7 @@ void Cmd_Roll_f(edict_t* ent)
 
 
 		//increase min values
-		random += 5;
+		random += 1;
 		
 		//repeat unitl non zero answer
 		/*while (random == 0)
