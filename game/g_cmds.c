@@ -5314,15 +5314,66 @@ void Cmd_Test_f (edict_t* ent)
 		ent->client->turn = true;
 	}
 
+	if (!ent->client->inCombat)
+	{
+		return;
+	}
 	if (gi.argc() == 2)
 	{
 		partyIndex = atoi(gi.argv(1));
 	}
 }
 
+//calls help screen and resets it, telling the player what the combat state is
 void Cmd_Guide_f(edict_t* ent)
 {
 	CombatScreen(ent);
+}
+
+void Cmd_Turn_f(edict_t* ent)
+{
+	gclient_t* client;
+
+	if (ent->client)
+	{
+		client = ent->client;
+	}
+	else
+	{
+		return;
+	}
+
+	if (!client->inCombat)
+	{
+		gi.cprintf(ent, 1, "Not in combat!\n");
+		return;
+	}
+
+	if (!client->turn)
+	{
+		gi.cprintf(ent, 1, "It is the monster\'s turn! Press \'G\' to continue\n");
+		return;
+	}
+
+	switch (partyIndex)
+	{
+	case CLASS_HERO:
+		gi.cprintf(ent, 1, "It is the hero\'s turn!\n");
+		return;
+		break;
+	case CLASS_RANGER:
+		gi.cprintf(ent, 1, "It is the ranger\'s turn!\n");
+		return;
+		break;
+	case CLASS_WIZARD:
+		gi.cprintf(ent, 1, "It is the wizard\'s turn!\n");
+		return;
+		break;
+	case CLASS_WARRIOR:
+		gi.cprintf(ent, 1, "It is the warrior\'s turn!\n");
+		return;
+		break;
+	}
 }
 /*
 =================
@@ -5453,6 +5504,11 @@ void ClientCommand (edict_t *ent)
 	if (Q_stricmp(cmd, "attack") == 0)
 	{
 		Cmd_Attack_f(ent);
+		return;
+	}
+	if (Q_stricmp(cmd, "turn") == 0)
+	{
+		Cmd_Turn_f(ent);
 		return;
 	}
 
