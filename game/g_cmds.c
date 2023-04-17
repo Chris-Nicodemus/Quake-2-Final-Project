@@ -1675,7 +1675,7 @@ void MonsterAttack(edict_t* ent, int target, int damage)
 			guideSet = true;
 			return;
 		}
-		if (buffer)
+		if (client->heroBuffer)
 		{
 			if (client->heroTempHealth > damage)
 			{
@@ -1792,13 +1792,15 @@ void MonsterAttack(edict_t* ent, int target, int damage)
 			client->wizardWeapon = 0;
 			client->warriorArmor = 0;
 			client->warriorWeapon = 0;
-
+			
 			partyIndex = 1;
 			monsterIndex = 1;
 
 
 			shieldBash = 0;
 			smite = false;
+			client->warriorTaunt = false;
+			client->heroBuffer = false;
 			buffer = false;
 
 			client->inCombat = false;
@@ -1828,7 +1830,7 @@ void MonsterAttack(edict_t* ent, int target, int damage)
 			guideSet = true;
 			return;
 		}
-		if (buffer)
+		if (client->heroBuffer)
 		{
 			if (client->rangerTempHealth > damage)
 			{
@@ -1945,7 +1947,7 @@ void MonsterAttack(edict_t* ent, int target, int damage)
 			guideSet = true;
 			return;
 		}
-		if (buffer)
+		if (client->heroBuffer)
 		{
 			if (client->wizardTempHealth > damage)
 			{
@@ -2068,7 +2070,7 @@ void MonsterAttack(edict_t* ent, int target, int damage)
 			return;
 		}
 
-		if (buffer)
+		if (client->heroBuffer)
 		{
 			if (client->warriorTempHealth > damage)
 			{
@@ -2572,8 +2574,10 @@ void Cmd_UseSkill_f(edict_t* ent)
 			{
 				if (client->heroMP >= 30)
 				{
+					
 					//do skill
 					client->heroBuffer = true;
+					buffer = true;
 					client->heroTempHealth = 20;
 					client->rangerTempHealth = 20;
 					client->wizardTempHealth = 20;

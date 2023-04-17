@@ -538,9 +538,9 @@ void CombatScreen(edict_t* ent)
 		enemies,
 		guide,
 		info,
-		client->rangerHealth, client->rangerMP,
-		client->wizardHealth, client->wizardMP,
-		client->warriorHealth, client->warriorMP);
+		client->rangerHealth + client->rangerTempHealth, client->rangerMP,
+		client->wizardHealth + client->wizardTempHealth, client->wizardMP,
+		client->warriorHealth + client->warriorTempHealth, client->warriorMP);
 	}
 	gi.WriteByte(svc_layout);
 	gi.WriteString(string);
