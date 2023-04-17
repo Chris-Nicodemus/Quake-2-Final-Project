@@ -1063,6 +1063,18 @@ void PartyNextTurn(edict_t* ent)
 	case 5:
 		client->turn = false;
 		partyIndex = 1;
+		if (enemy->enemy1Type == MONSTER_DEMON)
+		{
+			enemy->demonShroud1 = true;
+		}
+		if (enemy->enemy2Type == MONSTER_DEMON)
+		{
+			enemy->demonShroud2 = true;
+		}
+		if (enemy->enemy3Type == MONSTER_DEMON)
+		{
+			enemy->demonShroud3 = true;
+		}
 	}
 }
 
@@ -1508,13 +1520,46 @@ void EnemyCheck(edict_t* ent)
 
 }
 
+//function for testing random
+int Cmd_Roll_f(edict_t* ent)
+{
+	//int i;
+	int random;
+	//for (i = 0; i < 5; i++)
+	//{
+		//range
+		random = (int)(crandom() * 4);
+
+		//invert negatives
+		if (random < 0)
+		{
+			random = random * -1;
+		}
+
+
+		//increase min values
+		random += 1;
+
+		//repeat unitl non zero answer
+		/*while (random == 0)
+		{
+			random = (int)(crandom() * 6);
+			if (random < 0)
+			{
+				random = random * -1;
+			}
+			random += 5;
+		}*/
+		gi.cprintf(ent, 1, "random int: %d\n", random);
+		return random;
+	//}
+}
 //randomizes damage of attacks for monsters and targets of attacks for monsters
 int Generate(int min, int range)
 {
 	int deal = 0;
 
-	deal = (int)(crandom() * range);
-
+	deal = (int) (crandom() * range);
 	//invert negatives
 	if(deal < 0)
 	{
@@ -1827,10 +1872,11 @@ void MonsterAttack(edict_t* ent, int target, int damage)
 			/*if ((enemy->svflags & SVF_MONSTER) || (client))
 				enemy->flags |= FL_NO_KNOCKBACK;
 			Killed(client, enemy, enemy, damage, pos);*/
-			Cmd_Kill_f(ent);
+			//Cmd_Kill_f(ent);
 			//player_die(ent, ent, ent, 1000, vec3_origin);
 			return;
 		}
+		return;
 	case CLASS_RANGER:
 		damage -= (client->rangerArmor * 3);
 		if (damage < 0)
@@ -2345,18 +2391,13 @@ void Cmd_MonsterBehave_f(edict_t* ent)
 	//finds out if there are AoE attacks to consider
 	EnemyCheck(ent);
 
-	//always attack warrior if the warrior is alive and taunting
-	if (client->warriorTaunt && !client->warriorDead)
-	{
-		target = 4;
-		validTarget = true;
-	}
+	//while (!validTarget)
+	//{
+	getTarget:
+	target = Generate(1, 4);
 
-	while (!validTarget)
-	{
-		//generates number from 1 to 4
-		target = Generate(1, 4);
-
+		//target = (int)(random() * 4);
+		//target++;
 		//always true if combat is still happening
 		if (target == CLASS_HERO)
 		{
@@ -2368,6 +2409,7 @@ void Cmd_MonsterBehave_f(edict_t* ent)
 			if (client->rangerDead)
 			{
 				validTarget = false;
+				goto getTarget;
 			}
 		}
 
@@ -2376,6 +2418,7 @@ void Cmd_MonsterBehave_f(edict_t* ent)
 			if (client->wizardDead)
 			{
 				validTarget = false;
+				goto getTarget;
 			}
 		}
 
@@ -2384,9 +2427,19 @@ void Cmd_MonsterBehave_f(edict_t* ent)
 			if (client->warriorDead)
 			{
 				validTarget = false;
+				goto getTarget;
 			}
 		}
-	}
+	//}
+	
+	//always attack warrior if the warrior is alive and taunting
+		if (client->warriorTaunt && !client->warriorDead)
+		{
+			target = 4;
+			validTarget = true;
+		}
+
+	//gi.cprintf(ent, 1, "%d\n", target);
 
 	switch (monsterIndex)
 	{
@@ -5532,40 +5585,6 @@ void Cmd_CombatBegin_f(edict_t* ent)
 	}
 }
 
-
-//function for testing random
-void Cmd_Roll_f(edict_t* ent)
-{
-	int i;
-	int random;
-	for (i = 0; i < 5; i++)
-	{
-		//range
-		random = (int)(crandom() * 4);
-
-		//invert negatives
-		if (random < 0)
-		{
-			random = random * -1;
-		}
-
-
-		//increase min values
-		random += 1;
-		
-		//repeat unitl non zero answer
-		/*while (random == 0)
-		{
-			random = (int)(crandom() * 6);
-			if (random < 0)
-			{
-				random = random * -1;
-			}
-			random += 5;
-		}*/
-		gi.cprintf(ent, 1, "random int: %d\n", random);
-	}
-}
 
 qboolean test;
 void Cmd_Test_f (edict_t* ent)
