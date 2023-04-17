@@ -1621,6 +1621,12 @@ void MonsterAttack(edict_t* ent, int target, int damage)
 		return;
 	}
 
+	//protecting against this being called after hero dies
+	if (!client->inCombat)
+	{
+		return;
+	}
+
 	edict_t* enemy = client->enemy;
 	char* begin;
 	char* dealStr;
@@ -1713,6 +1719,7 @@ void MonsterAttack(edict_t* ent, int target, int damage)
 			{
 				damage -= client->heroTempHealth;
 				client->heroTempHealth = 0;
+				ent->health = ent->health - damage;
 
 				info = "The enemy has broken your holy shield!";
 				infoSet = true;
@@ -1814,7 +1821,14 @@ void MonsterAttack(edict_t* ent, int target, int damage)
 
 			gi.centerprintf(ent, "The hero has died! All hope is lost!");
 
-			//Cmd_Kill_f(ent);
+			/*vec3_t* pos;
+			pos = ent->s.origin;*/
+
+			/*if ((enemy->svflags & SVF_MONSTER) || (client))
+				enemy->flags |= FL_NO_KNOCKBACK;
+			Killed(client, enemy, enemy, damage, pos);*/
+			Cmd_Kill_f(ent);
+			//player_die(ent, ent, ent, 1000, vec3_origin);
 			return;
 		}
 	case CLASS_RANGER:
@@ -1868,6 +1882,7 @@ void MonsterAttack(edict_t* ent, int target, int damage)
 			{
 				damage -= client->rangerTempHealth;
 				client->rangerTempHealth = 0;
+				client->rangerHealth = client->rangerHealth - damage;
 
 				info = "The enemy has broken your holy shield!";
 				infoSet = true;
@@ -1985,6 +2000,7 @@ void MonsterAttack(edict_t* ent, int target, int damage)
 			{
 				damage -= client->wizardTempHealth;
 				client->wizardTempHealth = 0;
+				client->wizardHealth = client->wizardHealth - damage;
 
 				info = "The enemy has broken your holy shield!";
 				infoSet = true;
@@ -2108,6 +2124,7 @@ void MonsterAttack(edict_t* ent, int target, int damage)
 			{
 				damage -= client->warriorTempHealth;
 				client->warriorTempHealth = 0;
+				client->warriorHealth = client->warriorHealth - damage;
 
 				info = "The enemy has broken your holy shield!";
 				infoSet = true;
@@ -2348,25 +2365,25 @@ void Cmd_MonsterBehave_f(edict_t* ent)
 
 		if (target == CLASS_RANGER)
 		{
-			if (!client->rangerDead)
+			if (client->rangerDead)
 			{
-				validTarget = true;
+				validTarget = false;
 			}
 		}
 
 		if (target == CLASS_WIZARD)
 		{
-			if (!client->wizardDead)
+			if (client->wizardDead)
 			{
-				validTarget = true;
+				validTarget = false;
 			}
 		}
 
 		if (target == CLASS_WARRIOR)
 		{
-			if (!client->warriorDead)
+			if (client->warriorDead)
 			{
-				validTarget = true;
+				validTarget = false;
 			}
 		}
 	}
