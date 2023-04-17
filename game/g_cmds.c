@@ -904,6 +904,16 @@ int partyIndex = 1;
 int monsterIndex = 1;
 qboolean shopOpen = false;
 
+//AoE attacks
+int goblinBomb = 1;		//triggers at 4
+int drakeFire = 1;		//triggers at 3
+int dragonFire = 1;		//triggers at 2
+
+qboolean goblin = false;	//true if there is a goblin among the enemies
+qboolean drake = false;		//true if there is a drake
+qboolean dragon = false;	//true if there is a dragon
+
+qboolean battleLost = false; //true if the monsters kill the hero
 //if battle ends or you run from battle, enemy stats and values are cleaned
 void Cmd_CleanValues_f(edict_t* ent)
 {
@@ -940,6 +950,14 @@ void Cmd_CleanValues_f(edict_t* ent)
 	enemy->enemy2Weak = false;
 	enemy->enemy3Weak = false;
 	//client->enemy = NULL;
+
+	goblinBomb = 1;
+	drakeFire = 1;
+	dragonFire = 1;
+
+	goblin = false;
+	drake = false;
+	dragon = false;
 
 	partyIndex = 1;
 	monsterIndex = 1;
@@ -1053,7 +1071,7 @@ void PartyNextTurn(edict_t* ent)
 //Party member attack damage calculation
 void PartyAttack(edict_t* ent, int target, int damage, qboolean weapon, qboolean base)
 {
-	gi.cprintf(ent, 1, "Party Attack is getting called\n");
+	//gi.cprintf(ent, 1, "Party Attack is getting called\n");
 	int deal = 0;
 
 	gclient_t* client;
@@ -1433,16 +1451,7 @@ void PartyAttack(edict_t* ent, int target, int damage, qboolean weapon, qboolean
 	smite = false;
 }
 
-//AoE attacks
-int goblinBomb = 1;		//triggers at 4
-int drakeFire = 1;		//triggers at 3
-int dragonFire = 1;		//triggers at 2
 
-qboolean goblin = false;	//true if there is a goblin among the enemies
-qboolean drake = false;		//true if there is a drake
-qboolean dragon = false;	//true if there is a dragon
-
-qboolean battleLost = false; //true if the monsters kill the hero
 
 void EnemyCheck(edict_t* ent)
 {
@@ -1541,9 +1550,12 @@ void MonsterNextTurn(edict_t* ent)
 
 	if (monsterIndex > numEnemies)
 	{
+		//set turn to player's turn
+		client->turn = true;
+
 		monsterIndex = 1;
 		partyIndex = 1;
-
+		
 		//end curse of frailty
 		enemy->enemy1Weak = false;
 		enemy->enemy2Weak = false;
@@ -1564,6 +1576,19 @@ void MonsterNextTurn(edict_t* ent)
 
 		//turn off taunt
 		client->warriorTaunt = false;
+
+		if (goblinBomb == 4)
+		{
+			goblinBomb = 0;
+		}
+		if (drakeFire == 3)
+		{
+			drakeFire = 0;
+		}
+		if (dragonFire == 2)
+		{
+			dragonFire = 0;
+		}
 
 		//AoE tick up
 		if (goblin)
@@ -1605,7 +1630,35 @@ void MonsterAttack(edict_t* ent, int target, int damage)
 	int dealLen;
 	int endlen;
 
-	
+	qboolean weak = false;
+
+	switch (monsterIndex)
+	{
+	case 1:
+		if (enemy->enemy1Weak)
+		{
+			weak = true;
+		}
+		break;
+	case 2:
+		if (enemy->enemy2Weak)
+		{
+			weak = true;
+		}
+		break;
+	case 3:
+		if (enemy->enemy3Weak)
+		{
+			weak = true;
+		}
+		break;
+	}
+	//curse of frailty debuff
+	if (weak)
+	{
+		damage = damage / 2;
+	}
+
 	switch (target)
 	{
 	case CLASS_HERO:
@@ -1743,6 +1796,7 @@ void MonsterAttack(edict_t* ent, int target, int damage)
 			partyIndex = 1;
 			monsterIndex = 1;
 
+
 			shieldBash = 0;
 			smite = false;
 			buffer = false;
@@ -1758,7 +1812,7 @@ void MonsterAttack(edict_t* ent, int target, int damage)
 
 			gi.centerprintf(ent, "The hero has died! All hope is lost!");
 
-			Cmd_Kill_f(ent);
+			//Cmd_Kill_f(ent);
 			return;
 		}
 	case CLASS_RANGER:
@@ -2121,6 +2175,124 @@ void MonsterAttack(edict_t* ent, int target, int damage)
 	}
 }
 
+void MonsterTypeBehavior(edict_t* ent, int target, int monsterType)
+{
+	gclient_t* client;
+	if (ent->client)
+	{
+		client = ent->client;
+	}
+	else
+	{
+		return;
+	}
+	edict_t* enemy = client->enemy;
+
+	int deal;
+	switch (monsterType)
+	{
+	case MONSTER_NONE:
+		gi.cprintf(ent, 1, "A monster type 0 was called! You messed up man!\n");
+		return;
+		break;
+	case MONSTER_GOBLIN:
+		if (goblinBomb == 4)
+		{
+			MonsterAttack(ent, 1, 10);
+			if (!client->rangerDead)
+			{
+				MonsterAttack(ent, 2, 10);
+			}
+
+			if (!client->wizardDead)
+			{
+				MonsterAttack(ent, 3, 10);
+			}
+
+			if (!client->warriorDead)
+			{
+				MonsterAttack(ent, 4, 10);
+			}
+
+			guide = "The goblin has thrown a bomb at your party!";
+			guideSet = true;
+		}
+		else
+		{
+			deal = Generate(5, 6);
+			MonsterAttack(ent, target, deal);
+		}
+		return; 
+		break;
+	case MONSTER_ORC:
+		deal = Generate(10, 6);
+		MonsterAttack(ent, target, deal);
+		return;
+		break;
+	case MONSTER_DRAKE:
+		if (drakeFire == 3)
+		{
+			MonsterAttack(ent, 1, 15);
+			if (!client->rangerDead)
+			{
+				MonsterAttack(ent, 2, 15);
+			}
+
+			if (!client->wizardDead)
+			{
+				MonsterAttack(ent, 3, 15);
+			}
+
+			if (!client->warriorDead)
+			{
+				MonsterAttack(ent, 4, 15);
+			}
+			guide = "The drake used his fire breath on your party!";
+			guideSet = true;
+		}
+		else
+		{
+			deal = Generate(15, 6);
+			MonsterAttack(ent, target, deal);
+		}
+		return;
+		break;
+	case MONSTER_DEMON:
+		deal = Generate(15, 6);
+		MonsterAttack(ent, target, deal);
+		return;
+		break;
+	case MONSTER_DRAGON:
+		if (dragonFire == 2)
+		{
+			MonsterAttack(ent, 1, 20);
+			if (!client->rangerDead)
+			{
+				MonsterAttack(ent, 2, 20);
+			}
+
+			if (!client->wizardDead)
+			{
+				MonsterAttack(ent, 3, 20);
+			}
+
+			if (!client->warriorDead)
+			{
+				MonsterAttack(ent, 4, 20);
+			}
+			guide = "The dragon used his fire breath on your party!";
+			guideSet = true;
+		}
+		else
+		{
+			deal = Generate(15, 6);
+			MonsterAttack(ent, target, deal);
+		}
+		return;
+		break;
+	}
+}
+
 void Cmd_MonsterBehave_f(edict_t* ent)
 {
 	gclient_t* client;
@@ -2145,6 +2317,8 @@ void Cmd_MonsterBehave_f(edict_t* ent)
 		return;
 	}
 
+	edict_t* enemy = client->enemy;
+
 	qboolean validTarget = false;
 	int target = 0;
 	int damage = 0;
@@ -2152,6 +2326,69 @@ void Cmd_MonsterBehave_f(edict_t* ent)
 	//finds out if there are AoE attacks to consider
 	EnemyCheck(ent);
 
+	//always attack warrior if the warrior is alive and taunting
+	if (client->warriorTaunt && !client->warriorDead)
+	{
+		target = 4;
+		validTarget = true;
+	}
+
+	while (!validTarget)
+	{
+		//generates number from 1 to 4
+		target = Generate(1, 4);
+
+		//always true if combat is still happening
+		if (target == CLASS_HERO)
+		{
+			validTarget = true;
+		}
+
+		if (target == CLASS_RANGER)
+		{
+			if (!client->rangerDead)
+			{
+				validTarget = true;
+			}
+		}
+
+		if (target == CLASS_WIZARD)
+		{
+			if (!client->wizardDead)
+			{
+				validTarget = true;
+			}
+		}
+
+		if (target == CLASS_WARRIOR)
+		{
+			if (!client->warriorDead)
+			{
+				validTarget = true;
+			}
+		}
+	}
+
+	switch (monsterIndex)
+	{
+	case 1:
+		MonsterTypeBehavior(ent, target, enemy->enemy1Type);
+		monsterIndex++;
+		MonsterNextTurn(ent);
+		break;
+	case 2:
+		MonsterTypeBehavior(ent, target, enemy->enemy2Type);
+		monsterIndex++;
+		MonsterNextTurn(ent);
+		break;
+	case 3:
+		MonsterTypeBehavior(ent, target, enemy->enemy3Type);
+		monsterIndex++;
+		MonsterNextTurn(ent);
+		break;
+	}
+
+	CombatScreen(ent);
 }
 
 void Cmd_WeaponPrices_f(edict_t* ent)
@@ -3291,6 +3528,7 @@ void Cmd_Attack_f(edict_t* ent)
 	if (!client->turn)
 	{
 		gi.cprintf(ent, 1, "Can only attack on your turn!\n");
+		return;
 	}
 	edict_t* enemy;
 	enemy = client->enemy;
@@ -4204,7 +4442,7 @@ void Cmd_Buy_f(edict_t* ent)
 			else
 			{
 				ent->client->gold = ent->client->gold - price;
-				ent->client->potions = ent->client->potions + quantity;
+				ent->client->magicPotions = ent->client->magicPotions + quantity;
 				gi.centerprintf(ent, "Purchased");
 				return;
 			}
@@ -4220,7 +4458,7 @@ void Cmd_Buy_f(edict_t* ent)
 			else
 			{
 				ent->client->gold = ent->client->gold - price;
-				ent->client->potions = ent->client->potions + 1;
+				ent->client->magicPotions = ent->client->magicPotions + 1;
 				gi.centerprintf(ent, "Purchased");
 				return;
 			}
@@ -4953,10 +5191,11 @@ void Cmd_LootStatVals_f(edict_t* ent, int enemyType, int numEnemy)
 			enemy->enemy1Health = 160;
 			
 			//if a demon gets the drop on the player, it gets to have it's shroud on the first turn
-			if (!client->turn)
-			{
-				enemy->demonShroud1 = true;
-			}
+			//if (!client->turn)
+			//{
+			//decided to give demons their shroud no matter what to make them more interesting
+			enemy->demonShroud1 = true;
+			//}
 
 			//loot values
 			enemy->gunpowderValue = enemy->gunpowderValue + 10;
@@ -5018,12 +5257,14 @@ void Cmd_LootStatVals_f(edict_t* ent, int enemyType, int numEnemy)
 			enemy->enemy2Health = 160;
 
 			//if a demon gets the drop on the player, it gets to have it's shroud on the first turn
-			if (!client->turn)
-			{
-				enemy->demonShroud2 = true;
-			}
+			//if (!client->turn)
+			//{
+			//decided to give demons their shroud no matter what
+			enemy->demonShroud2 = true;
+			//}
 
 			//loot values
+			enemy->gunpowderValue = enemy->gunpowderValue + 10;
 			enemy->goldValue = enemy->goldValue + 60;
 			break;
 		}
@@ -5509,6 +5750,11 @@ void ClientCommand (edict_t *ent)
 	if (Q_stricmp(cmd, "turn") == 0)
 	{
 		Cmd_Turn_f(ent);
+		return;
+	}
+	if (Q_stricmp(cmd, "monster") == 0)
+	{
+		Cmd_MonsterBehave_f(ent);
 		return;
 	}
 
