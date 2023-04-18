@@ -2527,7 +2527,7 @@ void Cmd_WeaponPrices_f(edict_t* ent)
 	{
 		return;
 	}
-	gi.cprintf(ent, 1, "Weapon Upgrades\nIron\t10g\nDarksteel\t30g\nDragon Scale\t15 Scales\n");
+	gi.cprintf(ent, 1, "Weapon Upgrades\nLight        10g\nDarksteel    30g\nDragon Scale 15 Scales\n");
 }
 
 void Cmd_ArmorPrices_f(edict_t* ent)
@@ -2541,7 +2541,7 @@ void Cmd_ArmorPrices_f(edict_t* ent)
 	{
 		return;
 	}
-	gi.cprintf(ent, 1, "Armor Upgrades\nLight\t10g\nDarksteel\t30g\nDragon Scale\t15 Scales\n");
+	gi.cprintf(ent, 1, "Armor Upgrades\nLight        10g\nDarksteel    30g\nDragon Scale 15 Scales\n");
 }
 
 void Cmd_ConsumablePrices_f(edict_t* ent)
@@ -2555,7 +2555,7 @@ void Cmd_ConsumablePrices_f(edict_t* ent)
 	{
 		return;
 	}
-	gi.cprintf(ent, 1, "Consumables \nHealth Potion\t15g\nMagic Potion\t20g\nBomb\t5 Gunpowder\n");
+	gi.cprintf(ent, 1, "Consumables\nHealth Potion  15g\nMagic Potion 20g\nBomb         5 Gunpowder\n");
 }
 
 void Cmd_Resources_f(edict_t* ent)
@@ -2571,7 +2571,7 @@ void Cmd_Resources_f(edict_t* ent)
 	}
 	if (!client->inCombat)
 	{
-		gi.cprintf(ent,1,"Current Gold:\t%d\nCurrent Scales:\t%d\nCurrent Gunpowder:\t%d", client->gold,client->scales,client->gunpowder);
+		gi.cprintf(ent,1,"Current Gold:      %d\nCurrent Scales:    %d\nCurrent Gunpowder: %d", client->gold,client->scales,client->gunpowder);
 	}
 	else
 	{
@@ -2581,7 +2581,7 @@ void Cmd_Resources_f(edict_t* ent)
 
 void Cmd_Items_f(edict_t* ent)
 {
-	gi.cprintf(ent, 1, "Potions:\t\t%d\nMagic Potions:\t%d\nBombs\t\t%d\n",ent->client->potions, ent->client->magicPotions, ent->client->bombs);
+	gi.cprintf(ent, 1, "Potions:         %d\nMagic Potions:   %d\nBombs:           %d\n",ent->client->potions, ent->client->magicPotions, ent->client->bombs);
 }
 
 void Cmd_Stats_f(edict_t* ent)
