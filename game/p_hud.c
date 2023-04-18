@@ -491,16 +491,20 @@ void CombatScreen(edict_t* ent)
 	//sets starting stats
 	if (firstCombat)
 	{
+		client->heroHealth = 100;
 		client->heroMP = 100;
 
 		client->rangerHealth = 100;
 		client->rangerMP = 100;
+		client->rangerDead = false;
 
 		client->wizardHealth = 100;
 		client->wizardMP = 100;
+		client->wizardDead = false;
 
 		client->warriorHealth = 100;
 		client->warriorMP = 100;
+		client->warriorDead = false;
 
 		firstCombat = false;
 	}
@@ -644,7 +648,7 @@ void G_SetStats (edict_t *ent)
 	// health
 	//
 	ent->client->ps.stats[STAT_HEALTH_ICON] = level.pic_health;
-	ent->client->ps.stats[STAT_HEALTH] = ent->health + ent->client->heroTempHealth;
+	ent->client->ps.stats[STAT_HEALTH] = ent->client->heroHealth + ent->client->heroTempHealth;
 
 	//
 	// ammo

@@ -1031,10 +1031,18 @@ void PartyNextTurn(edict_t* ent)
 		{
 			partyIndex++;
 		}
+		else
+		{
+			break;
+		}
 	case CLASS_WIZARD:
 		if (client->wizardDead)
 		{
 			partyIndex++;
+		}
+		else
+		{
+			break;
 		}
 	case CLASS_WARRIOR:
 		if (client->warriorDead)
@@ -1764,7 +1772,12 @@ void MonsterAttack(edict_t* ent, int target, int damage)
 			{
 				damage -= client->heroTempHealth;
 				client->heroTempHealth = 0;
-				ent->health = ent->health - damage;
+				//don't let the display try to show a negative number so skip to end
+				if (client->heroHealth - damage <= 0)
+				{
+					goto loseState;
+				}
+				client->heroHealth = client->heroHealth - damage;
 
 				info = "The enemy has broken your holy shield!";
 				infoSet = true;
@@ -1794,7 +1807,12 @@ void MonsterAttack(edict_t* ent, int target, int damage)
 		}
 		else
 		{
-			ent->health = ent->health - damage;
+			//don't let the display try to show a negative number so skip to end
+			if (client->heroHealth - damage <= 0)
+			{
+				goto loseState;
+			}
+			client->heroHealth = client->heroHealth - damage;
 
 			info = "The hero was attacked!";
 			infoSet = true;
@@ -1823,8 +1841,14 @@ void MonsterAttack(edict_t* ent, int target, int damage)
 		}
 
 		//lose state only for hero. You can go on fighting so long as the hero is alive
-		if (ent->health <= 0)
+		if (client->heroHealth <= 0)
 		{
+			loseState:
+			client->heroHealth = 100;
+			client->rangerHealth = 100;
+			client->wizardHealth = 100;
+			client->warriorHealth = 100;
+
 			battleLost = true;
 
 			firstCombat = false;
@@ -1845,6 +1869,15 @@ void MonsterAttack(edict_t* ent, int target, int damage)
 			client->warriorArmor = 0;
 			client->warriorWeapon = 0;
 			
+
+			client->heroTempHealth = 0;
+			client->rangerTempHealth = 0;
+			client->wizardTempHealth = 0;
+			client->warriorTempHealth = 0;
+			client->heroBuffer = false;
+			client->warriorTaunt = false;
+
+
 			partyIndex = 1;
 			monsterIndex = 1;
 
@@ -1856,15 +1889,35 @@ void MonsterAttack(edict_t* ent, int target, int damage)
 			buffer = false;
 
 			client->inCombat = false;
-			Cmd_CleanValues_f(ent);
-			client->enemy = NULL;
+			
+			enemy->enemy1Health = 0;
+			enemy->enemy1Type = 0;
+			enemy->enemy2Health = 0;
+			enemy->enemy2Type = 0;
+			enemy->enemy3Health = 0;
+			enemy->enemy3Type = 0;
+			enemy->demonShroud1 = false;
+			enemy->demonShroud2 = false;
+			enemy->demonShroud3 = false;
+			enemy->enemy1Weak = false;
+			enemy->enemy2Weak = false;
+			enemy->enemy3Weak = false;
+			//client->enemy = NULL;
+
+			goblinBomb = 1;
+			drakeFire = 1;
+			dragonFire = 1;
+
+			goblin = false;
+			drake = false;
+			dragon = false;
 
 			if (ent->client->showhelp)
 			{
 				Cmd_Help_f(ent);
 			}
 
-			gi.centerprintf(ent, "The hero has died! All hope is lost!");
+			gi.centerprintf(ent, "You lost the battle! Your stats are reset!");
 
 			/*vec3_t* pos;
 			pos = ent->s.origin;*/
@@ -2257,7 +2310,7 @@ void MonsterTypeBehavior(edict_t* ent, int target, int monsterType)
 	switch (monsterType)
 	{
 	case MONSTER_NONE:
-		gi.cprintf(ent, 1, "A monster type 0 was called! You messed up man!\n");
+		//gi.cprintf(ent, 1, "A monster type 0 was called! You messed up man!\n");
 		return;
 		break;
 	case MONSTER_GOBLIN:
@@ -3755,13 +3808,13 @@ void Cmd_UseItem_f(edict_t* ent)
 
 				if (Q_stricmp(gi.argv(2), "hero") == 0)
 				{
-					ent->health += heal;
-					if (ent->health > 100)
+					client->heroHealth += heal;
+					if (client->heroHealth > 100)
 					{
-						ent->health = 100;
+						client->heroHealth = 100;
 					}
 
-					gi.cprintf(ent, 1, "The hero now has %d health!\n", ent->health);
+					gi.cprintf(ent, 1, "The hero now has %d health!\n", client->heroHealth);
 
 					client->potions = client->potions - 1;
 					return;
@@ -3918,10 +3971,10 @@ void Cmd_UseItem_f(edict_t* ent)
 				switch (partyIndex)
 				{
 				case CLASS_HERO:
-					ent->health += heal;
-					if (ent->health > 100)
+					client->heroHealth += heal;
+					if (client->heroHealth > 100)
 					{
-						ent->health = 100;
+						client->heroHealth = 100;
 					}
 
 					//next turn
@@ -3929,19 +3982,19 @@ void Cmd_UseItem_f(edict_t* ent)
 					PartyNextTurn(ent);
 
 					//get screen set up
-					if (ent->health == 100)
+					if (client->heroHealth == 100)
 					{
 						health = malloc(3);
 					}
-					if (ent->health < 100 && ent->health > 9)
+					if (client->heroHealth < 100 && client->heroHealth > 9)
 					{
 						health = malloc(2);
 					}
-					if (ent->health < 10)
+					if (client->heroHealth < 10)
 					{
 						health = malloc(1);
 					}
-					sprintf(health, "%d", ent->health);
+					sprintf(health, "%d", client->heroHealth);
 
 					healthlen = strlen(health);
 					begin = "The hero now has ";

@@ -977,6 +977,7 @@ struct gclient_s
 	int			magicPotions;
 
 	//party stats
+	int			heroHealth;
 	int			heroMP;
 	int			heroArmor;
 	int			heroWeapon;
